@@ -11,7 +11,7 @@ import (
 
 	"github.com/davveo/singleTsquare/router"
 	"github.com/davveo/singleTsquare/services"
-	log "github.com/davveo/singleTsquare/utils"
+	"github.com/davveo/singleTsquare/utils/log"
 )
 
 func RunServer(configFile string) error {

@@ -12,7 +12,7 @@ func SetupRouter() *gin.Engine {
 	router.Use(middleware.JwtMiddleWare())
 
 	// 路由管理
-	ApiGroup := router.Group("api")
+	ApiGroup := router.Group("api/v1")
 
 	UserRouter(ApiGroup)
 	CommonRouter(ApiGroup)

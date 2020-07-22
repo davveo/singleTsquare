@@ -1,4 +1,4 @@
-package utils
+package log
 
 import (
 	"github.com/RichardKnop/logging"
