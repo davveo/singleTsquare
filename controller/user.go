@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/davveo/singleTsquare/models/request"
 	"github.com/davveo/singleTsquare/services"
+	"github.com/davveo/singleTsquare/utils/ip"
 	"github.com/davveo/singleTsquare/utils/response"
 	"github.com/davveo/singleTsquare/utils/str"
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,8 @@ var (
 // code	int	必传	验证码
 func Register(context *gin.Context) {
 	var userRequest request.UserRequest
+	clientIp := ip.ClientIP(context.Request)
+
 	if err := context.ShouldBindJSON(&userRequest); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
@@ -54,7 +57,7 @@ func Register(context *gin.Context) {
 	if _, err := userService.Create(
 		userRequest.UserName,
 		userRequest.Password,
-		userRequest.Phone); err != nil {
+		userRequest.Phone, clientIp); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}

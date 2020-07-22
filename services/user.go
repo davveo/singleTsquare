@@ -28,8 +28,8 @@ type UserService struct {
 	db *gorm.DB
 }
 
-func (s *UserService) Create(userName, password, phone string) (*models.AccountUser, error) {
-	return s.createUser(s.db, userName, password, phone)
+func (s *UserService) Create(userName, password, phone, createIpAt string) (*models.AccountUser, error) {
+	return s.createUser(s.db, userName, password, phone, createIpAt)
 
 }
 
