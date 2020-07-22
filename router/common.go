@@ -10,7 +10,7 @@ func CommonRouter(router *gin.RouterGroup) {
 	commonRouter := router.Group("common")
 	{
 		commonRouter.POST("code", controller.Code)
-		commonRouter.GET("captcha", controller.Captcha)
+		commonRouter.POST("captcha", controller.Captcha)
 		commonRouter.GET("healthcheck", controller.HealthCheck)
 	}
 
