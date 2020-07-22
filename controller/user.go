@@ -2,11 +2,9 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
-
-	"github.com/davveo/singleTsquare/services"
-
 	"github.com/davveo/singleTsquare/models/request"
+	"github.com/davveo/singleTsquare/services"
+	"github.com/davveo/singleTsquare/utils/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,18 +17,17 @@ var (
 // phone	string	email/phone两者择一	用户手机号
 // code	int	必传	验证码
 func Register(context *gin.Context) {
-	// 包括前台和后台注册
-	var userRequst request.UserRequest
-	if err := context.ShouldBindJSON(&userRequst); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var userRequest request.UserRequest
+	if err := context.ShouldBindJSON(&userRequest); err != nil {
+		response.FailWithMessage(err.Error(), context)
 		return
 	}
-
-	user, err := userService.FindUserByUsername(userRequst.UserName)
+	_, err := userService.FindUserByUsername(userRequest.UserName)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": err})
+		response.FailWithMessage(err.Error(), context)
+		return
 	}
-	fmt.Println(user)
+	response.Ok(context)
 }
 
 // username/email/phone三者择一

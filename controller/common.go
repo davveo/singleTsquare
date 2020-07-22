@@ -35,7 +35,8 @@ func Code(context *gin.Context) {
 
 	// 获取手机号
 	if err := context.ShouldBindJSON(&phoneRequrresJson); err != nil {
-		log.ERROR.Println(err)
+		response.FailWithMessage(err.Error(), context)
+		return
 	}
 
 	// 生成验证码
@@ -56,6 +57,8 @@ func Captcha(context *gin.Context) {
 	id, b64s, err := captcha.GenerateCaptcha(captchaType)
 	if err != nil {
 		log.ERROR.Println(err)
+		response.FailWithMessage(err.Error(), context)
+		return
 	}
 	response.OkWithData(
 		map[string]interface{}{

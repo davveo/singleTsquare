@@ -8,7 +8,7 @@ import (
 
 func UserRouter(router *gin.RouterGroup) {
 	// 前端路由
-	userOuterRouter := router.Group("user/o").Use(middleware.JwtMiddleWare())
+	userOuterRouter := router.Group("o_user").Use(middleware.JwtMiddleWare())
 	{
 		userOuterRouter.POST("register", controller.Register)      //注册接口
 		userOuterRouter.POST("login", controller.Login)            //登录接口
@@ -22,7 +22,7 @@ func UserRouter(router *gin.RouterGroup) {
 	}
 
 	// 后台路由
-	userInnerRouter := router.Group("user/i").Use(middleware.JwtMiddleWare())
+	userInnerRouter := router.Group("i_user").Use(middleware.JwtMiddleWare())
 	{
 		userInnerRouter.POST("register", controller.Register)
 		userInnerRouter.GET("list", controller.List)

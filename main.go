@@ -1,10 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/davveo/singleTsquare/cmd"
+	"github.com/davveo/singleTsquare/utils/log"
 	"github.com/urfave/cli"
 )
 
@@ -44,6 +44,6 @@ func main() {
 		},
 	}
 	if err := cliApp.Run(os.Args); err != nil {
-		log.Fatal(err)
+		log.INFO.Fatal(err)
 	}
 }
