@@ -14,7 +14,12 @@ var (
 	userService services.UserService
 )
 
-func UserCreate(context *gin.Context) {
+//username	string	非必传	用户账号
+// email	string	email/phone两者择一	用户邮箱
+// phone	string	email/phone两者择一	用户手机号
+// code	int	必传	验证码
+func Register(context *gin.Context) {
+	// 包括前台和后台注册
 	var userRequst request.UserRequest
 	if err := context.ShouldBindJSON(&userRequst); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -28,11 +33,29 @@ func UserCreate(context *gin.Context) {
 	fmt.Println(user)
 }
 
-func UserGet(context *gin.Context) {
+// username/email/phone三者择一
+// password	必传
+func Login(context *gin.Context) {
 
 }
 
-func UserUpdate(context *gin.Context) {
+func FastLogin(context *gin.Context) {
+
+}
+
+func OauthLogin(context *gin.Context) {
+
+}
+
+func Logout(context *gin.Context) {
+
+}
+
+func Get(context *gin.Context) {
+
+}
+
+func Update(context *gin.Context) {
 	// 获取uri参数
 	userId := context.Param("userId")
 
@@ -42,10 +65,6 @@ func UserUpdate(context *gin.Context) {
 	fmt.Println(userId, name)
 }
 
-func UserDelete(context *gin.Context) {
-
-}
-
-func UserList(context *gin.Context) {
+func List(context *gin.Context) {
 
 }

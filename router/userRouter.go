@@ -7,12 +7,26 @@ import (
 )
 
 func UserRouter(router *gin.RouterGroup) {
-	userRouter := router.Group("user").Use(middleware.JwtMiddleWare())
+	// 前端路由
+	userOuterRouter := router.Group("user/o").Use(middleware.JwtMiddleWare())
 	{
-		userRouter.POST("create", controller.UserCreate)
-		userRouter.GET("d/:userId", controller.UserGet)
-		userRouter.PUT("d/:userId", controller.UserUpdate)
-		userRouter.DELETE("d/:userId", controller.UserDelete)
-		userRouter.GET("list", controller.UserList)
+		userOuterRouter.POST("register", controller.Register)      //注册接口
+		userOuterRouter.POST("login", controller.Login)            //登录接口
+		userOuterRouter.POST("fast_login", controller.FastLogin)   //快捷登录
+		userOuterRouter.POST("oauth_login", controller.OauthLogin) //第三方登录
+		userOuterRouter.POST("logout", controller.Logout)          //登出接口
+		userOuterRouter.POST("code")
+		userOuterRouter.GET(":userId", controller.Get)    //获取用户信息
+		userOuterRouter.PUT(":userId", controller.Update) //修改用户信息
+
 	}
+
+	// 后台路由
+	userInnerRouter := router.Group("user/i").Use(middleware.JwtMiddleWare())
+	{
+		userInnerRouter.POST("register", controller.Register)
+		userInnerRouter.GET("list", controller.List)
+		userInnerRouter.GET("captcha", controller.Captcha)
+	}
+
 }
