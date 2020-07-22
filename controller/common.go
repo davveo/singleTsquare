@@ -27,7 +27,7 @@ var (
 		MaxEntrySize:       0,               // 条目最大尺寸，以字节为单位
 		HardMaxCacheSize:   0,               // 设置缓存最大值，以MB为单位，超过了不在分配内存。0表示无限制分配
 	}
-	cache, _ = bigcache.NewBigCache(config)
+	Cache, _ = bigcache.NewBigCache(config)
 )
 
 func Code(context *gin.Context) {
@@ -41,7 +41,7 @@ func Code(context *gin.Context) {
 
 	// 生成验证码
 	verifyCode := code.GenerateVerifyCode()
-	_ = cache.Set(
+	_ = Cache.Set(
 		fmt.Sprintf("verifycode:%s", phoneRequrresJson.Phone),
 		str.StrToByte(verifyCode))
 

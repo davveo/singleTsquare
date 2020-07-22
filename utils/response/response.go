@@ -44,6 +44,10 @@ func FailWithMessage(message string, context *gin.Context) {
 	Result(ERROR, map[string]interface{}{}, message, "系统繁忙,请稍后再试!", context)
 }
 
-func FailWithDetailed(code int, data interface{}, message string, context *gin.Context) {
-	Result(code, data, message, "系统繁忙,请稍后再试!", context)
+func FailWithMoreMessage(message, showMsg string, context *gin.Context) {
+	Result(ERROR, map[string]interface{}{}, message, showMsg, context)
+}
+
+func FailWithDetailed(code int, data interface{}, message, showMsg string, context *gin.Context) {
+	Result(code, data, message, showMsg, context)
 }
