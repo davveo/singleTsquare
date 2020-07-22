@@ -6,6 +6,8 @@ import (
 
 	"github.com/davveo/singleTsquare/config"
 	"github.com/jinzhu/gorm"
+
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 func init() {
@@ -43,3 +45,5 @@ func NewDataBase(cfg *config.Config) (*gorm.DB, error) {
 	}
 	return nil, fmt.Errorf("Database type %s not supported", cfg.Database.Type)
 }
+
+

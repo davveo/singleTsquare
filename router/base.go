@@ -5,14 +5,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Routers() *gin.Engine {
+func SetupRouter() *gin.Engine {
 	router := gin.Default()
 	// 中间件管理
 	router.Use(middleware.CorsMiddleWare())
 	router.Use(middleware.JwtMiddleWare())
 
 	// 路由管理
-	ApiGroup := router.Group("")
+	ApiGroup := router.Group("api")
 
 	UserRouter(ApiGroup)
 

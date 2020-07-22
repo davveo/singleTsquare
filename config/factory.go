@@ -3,7 +3,7 @@ package config
 import "github.com/jinzhu/configor"
 
 var DefaultConfig = &Config{
-	Databse: DataBaseConfig{
+	Database: DataBaseConfig{
 		Type:         "mysql",
 		Host:         "localhost",
 		Port:         3306,

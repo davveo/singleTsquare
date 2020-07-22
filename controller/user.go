@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/davveo/singleTsquare/services"
@@ -24,7 +25,7 @@ func UserCreate(context *gin.Context) {
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
-
+	fmt.Println(user)
 }
 
 func UserGet(context *gin.Context) {
@@ -32,7 +33,13 @@ func UserGet(context *gin.Context) {
 }
 
 func UserUpdate(context *gin.Context) {
+	// 获取uri参数
+	userId := context.Param("userId")
 
+	// 获取query参数
+	name := context.DefaultQuery("name", "")
+
+	fmt.Println(userId, name)
 }
 
 func UserDelete(context *gin.Context) {

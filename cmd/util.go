@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/davveo/singleTsquare/config"
-	database "github.com/davveo/singleTsquare/initialize/db"
+	database "github.com/davveo/singleTsquare/plugin/db"
 	"github.com/jinzhu/gorm"
 )
 
@@ -14,4 +14,8 @@ func initConfig(configFile string) (*config.Config, *gorm.DB, error) {
 		return nil, nil, err
 	}
 	return cfg, db, nil
+}
+
+func initPlugin(*config.Config) error {
+	return nil
 }
