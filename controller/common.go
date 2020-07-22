@@ -2,22 +2,18 @@ package controller
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/davveo/singleTsquare/utils/captcha"
 	"github.com/davveo/singleTsquare/utils/code"
+	"github.com/davveo/singleTsquare/utils/response"
 	"github.com/gin-gonic/gin"
 )
 
 func Code(context *gin.Context) {
 	verifyCode := code.GenerateVerifyCode()
-	context.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": map[string]string{
-			"verifyCode": verifyCode,
-		},
-		"msg": "操作成功",
-	})
+	response.OkWithData(map[string]string{
+		"verifyCode": verifyCode,
+	}, context)
 }
 
 func Captcha(context *gin.Context) {
@@ -28,24 +24,14 @@ func Captcha(context *gin.Context) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	context.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": map[string]interface{}{
+	response.OkWithData(
+		map[string]interface{}{
 			"data":      b64s,
 			"captchaId": id,
-		},
-		"errorMsg": "",
-		"showMsg":  "success",
-	})
+		}, context)
 
 }
 
 func HealthCheck(context *gin.Context) {
-	context.JSON(http.StatusOK, gin.H{
-		"code":     0,
-		"data":     map[string]interface{}{},
-		"errorMsg": "",
-		"showMsg":  "success",
-	})
+	response.Ok(context)
 }
