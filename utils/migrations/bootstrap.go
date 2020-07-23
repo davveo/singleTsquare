@@ -3,7 +3,7 @@ package migrations
 import (
 	"fmt"
 
-	log "github.com/davveo/singleTsquare/utils"
+	"github.com/davveo/singleTsquare/utils/log"
 	"github.com/jinzhu/gorm"
 )
 

@@ -32,7 +32,7 @@ func main() {
 			Name:  "migrate",
 			Usage: "run migrations",
 			Action: func(c *cli.Context) error {
-				return nil
+				return cmd.Migrate(configFile)
 			},
 		},
 		{

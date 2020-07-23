@@ -2,8 +2,10 @@ package controller
 
 import (
 	"fmt"
-	"github.com/davveo/singleTsquare/models/request"
+
 	"github.com/davveo/singleTsquare/services"
+
+	"github.com/davveo/singleTsquare/models/request"
 	"github.com/davveo/singleTsquare/utils/ip"
 	"github.com/davveo/singleTsquare/utils/response"
 	"github.com/davveo/singleTsquare/utils/str"
@@ -11,8 +13,6 @@ import (
 )
 
 var (
-	userService services.UserService
-
 	ErrorPassword    = fmt.Sprintf("两次密码不一致")
 	ErrorVerifyCode  = fmt.Sprintf("验证码不正确")
 	UserHasRegister  = fmt.Sprintf("用户名已经注册")
@@ -44,17 +44,17 @@ func Register(context *gin.Context) {
 		return
 	}
 
-	if userService.UserExistByUsername(userRequest.UserName) {
+	if services.UserService.UserExistByUsername(userRequest.UserName) {
 		response.FailWithMoreMessage("", UserHasRegister, context)
 		return
 	}
 
-	if userService.UserExistByPhone(userRequest.Phone) {
+	if services.UserService.UserExistByPhone(userRequest.Phone) {
 		response.FailWithMoreMessage("", PhoneHasRegister, context)
 		return
 	}
 
-	if _, err := userService.Create(
+	if _, err := services.UserService.Create(
 		userRequest.UserName,
 		userRequest.Password,
 		userRequest.Phone, clientIp); err != nil {

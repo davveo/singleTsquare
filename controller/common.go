@@ -47,6 +47,7 @@ func Code(context *gin.Context) {
 
 	// 发送至手机 TODO
 	sms.Send(phoneRequrresJson.Phone)
+	fmt.Println(verifyCode)
 	response.Ok(context)
 }
 
