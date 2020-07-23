@@ -20,3 +20,6 @@ migrate:clean build
 run: clean build
 	@./${BINARY_NAME} runserver
 
+push: clean
+	git status
+	git commit -am"$(msg)"

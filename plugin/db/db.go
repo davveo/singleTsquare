@@ -41,9 +41,10 @@ func NewDataBase(cfg *config.Config) (*gorm.DB, error) {
 		// Database logging
 		db.LogMode(cfg.IsDevelopment)
 
+		//全局禁用表名复数
+		db.SingularTable(true)
+
 		return db, nil
 	}
 	return nil, fmt.Errorf("Database type %s not supported", cfg.Database.Type)
 }
-
-
