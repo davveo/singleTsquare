@@ -3,6 +3,8 @@ package services
 import (
 	"reflect"
 
+	"github.com/davveo/singleTsquare/services/account"
+
 	"github.com/davveo/singleTsquare/services/healthcheck"
 	"github.com/davveo/singleTsquare/services/user"
 
@@ -11,17 +13,20 @@ import (
 )
 
 var (
-	HealthService healthcheck.ServiceInterface
-	UserService   user.ServiceInterface
+	HealthService  healthcheck.ServiceInterface
+	UserService    user.ServiceInterface
+	AccountService account.ServiceInterface
 )
 
-// UseHealthService sets the health service
 func UseHealthService(h healthcheck.ServiceInterface) {
 	HealthService = h
 }
 
-// UseOauthService sets the oAuth service
-func UseOauthService(u user.ServiceInterface) {
+func UseUserService(u user.ServiceInterface) {
+	UserService = u
+}
+
+func UseAccountService(u user.ServiceInterface) {
 	UserService = u
 }
 
@@ -32,6 +37,10 @@ func Init(cfg *config.Config, db *gorm.DB) error {
 
 	if nil == reflect.TypeOf(UserService) {
 		UserService = user.NewService(db)
+	}
+
+	if nil == reflect.TypeOf(AccountService) {
+		AccountService = account.NewService(db, UserService)
 	}
 
 	return nil

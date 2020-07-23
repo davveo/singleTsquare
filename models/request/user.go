@@ -7,3 +7,9 @@ type UserRequest struct {
 	RepeatPassword string `json:"repeatpassword" binding:"required"`
 	Code           string `json:"code" binding:"required"`
 }
+
+type LoginRequest struct {
+	UserName string `json:"username"`
+	Phone    string `json:"phone"`
+	Password string `json:"password" binding:"required"`
+}

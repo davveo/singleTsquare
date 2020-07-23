@@ -5,10 +5,7 @@ import (
 )
 
 type ServiceInterface interface {
-	Create(userName, password, phone, createIpAt string) (*models.AccountUser, error)
-	FindUserByUsername(username string) (*models.AccountUser, error)
-	FindUserByPhone(phone string) (*models.AccountUser, error)
-	UserExistByUsername(username string) bool
-	UserExistByPhone(phone string) bool
+	Create(uid, role uint, nickName, avatar, gender string) (*models.User, error)
+	UpdateUser(user *models.User, role uint, nickName, avatar, gender string) error
 	Close()
 }

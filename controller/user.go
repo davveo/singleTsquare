@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 
+	"github.com/davveo/singleTsquare/models"
+
 	"github.com/davveo/singleTsquare/services"
 
 	"github.com/davveo/singleTsquare/models/request"
@@ -19,10 +21,6 @@ var (
 	PhoneHasRegister = fmt.Sprintf("手机号已经注册")
 )
 
-//  username	string	非必传	用户账号
-// email	string	email/phone两者择一	用户邮箱
-// phone	string	email/phone两者择一	用户手机号
-// code	int	必传	验证码
 func Register(context *gin.Context) {
 	var userRequest request.UserRequest
 	clientIp := ip.ClientIP(context.Request)
@@ -34,6 +32,8 @@ func Register(context *gin.Context) {
 	// 比较验证码
 	verifycodestr := fmt.Sprintf("verifycode:%s", userRequest.Phone)
 	bverifycode, _ := Cache.Get(verifycodestr)
+	_ = Cache.Delete(verifycodestr)
+
 	if str.ByteTostr(bverifycode) != userRequest.Code {
 		response.FailWithMoreMessage("", ErrorVerifyCode, context)
 		return
@@ -64,10 +64,36 @@ func Register(context *gin.Context) {
 	response.Ok(context)
 }
 
-// username/email/phone三者择一
+// username/phone三者择一
 // password	必传
 func Login(context *gin.Context) {
+	var (
+		loginRequest request.LoginRequest
+		accountUser  *models.AccountUser
+	)
 
+	clientIp := ip.ClientIP(context.Request)
+
+	if err := context.ShouldBindJSON(&loginRequest); err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+
+	if loginRequest.UserName != "" {
+		accountUser, _ = services.UserService.FindUserByUsername(loginRequest.UserName)
+	}
+
+	if loginRequest.Phone != "" {
+		accountUser, _ = services.UserService.FindUserByPhone(loginRequest.Phone)
+	}
+
+	if accountUser != nil {
+
+		// 更新用户信息
+		_ = services.UserService.UpdateUser(accountUser, clientIp)
+	} else {
+		// 用户不存在
+	}
 }
 
 func FastLogin(context *gin.Context) {
