@@ -1,5 +1,5 @@
 package sms
 
-func Send(phone string) {
-
+func Send(phone string) error {
+	return nil
 }

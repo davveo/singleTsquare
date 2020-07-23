@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"github.com/davveo/singleTsquare/utils/common"
+	"github.com/davveo/singleTsquare/utils/email"
 	"time"
 
 	"github.com/davveo/singleTsquare/utils/sms"
@@ -31,10 +33,8 @@ var (
 )
 
 func Code(context *gin.Context) {
-	var phoneRequrresJson request.PhoneRequestJson
-
-	// 获取手机号
-	if err := context.ShouldBindJSON(&phoneRequrresJson); err != nil {
+	var loginRequestJson request.LoginRequestJson
+	if err := context.ShouldBindJSON(&loginRequestJson); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
@@ -42,12 +42,26 @@ func Code(context *gin.Context) {
 	// 生成验证码
 	verifyCode := code.GenerateVerifyCode()
 	_ = Cache.Set(
-		fmt.Sprintf("verifycode:%s", phoneRequrresJson.Phone),
-		str.StrToByte(verifyCode))
+		fmt.Sprintf("verifycode:%s", loginRequestJson.LoginId), str.StrToByte(verifyCode))
 
-	// 发送至手机 TODO
-	sms.Send(phoneRequrresJson.Phone)
-	fmt.Println(verifyCode)
+	// login_id 可能是邮箱或者手机号
+	// TODO 考虑使用策略模式
+	// TODO 考虑异步发送
+	if common.VerifyEmailFormat(loginRequestJson.LoginId) {
+		subject := "登录注册码邮件"
+		bodyMsg := fmt.Sprintf("登录注册码为: %s", verifyCode)
+		if err := email.Send(loginRequestJson.LoginId, subject, bodyMsg); err != nil {
+			response.FailWithMessage(err.Error(), context)
+			return
+		}
+	}
+	if common.VerifyMobileFormat(loginRequestJson.LoginId) {
+		if err := sms.Send(loginRequestJson.LoginId); err != nil {
+			response.FailWithMessage(err.Error(), context)
+			return
+		}
+	}
+
 	response.Ok(context)
 }
 

@@ -67,6 +67,18 @@ func (s *Service) FindByPhone(phone string) (*models.Account, error) {
 	return account, nil
 }
 
+func (s *Service) FindByEmail(email string) (*models.Account, error) {
+	account := new(models.Account)
+	notFound := s.db.Where(
+		"email = LOWER(?)", email).Take(&account).RecordNotFound()
+
+	if notFound {
+		return nil, ErrUserNotFound
+	}
+
+	return account, nil
+}
+
 func (s *Service) ExistByUserName(username string) bool {
 	_, err := s.FindByName(username)
 	return err == nil
@@ -79,6 +91,21 @@ func (s *Service) ExistByPhone(phone string) bool {
 
 func (s *Service) UpdateAccount(lastLoginIpAt string, user *models.Account) error {
 	return s.updateAccount(s.db, lastLoginIpAt, user)
+}
+
+func (s *Service) FindByLoginId(loginId string) (*models.Account, error) {
+	// login_id= email或者phone
+	var account *models.Account
+	account, _ = s.FindByEmail(loginId)
+	if account != nil {
+		return account, nil
+	}
+
+	account, _ = s.FindByName(loginId)
+	if account != nil {
+		return account, nil
+	}
+	return nil, ErrUserNotFound
 }
 
 func (s *Service) createAccount(

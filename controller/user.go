@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-
 	"github.com/davveo/singleTsquare/models"
 
 	"github.com/davveo/singleTsquare/services"
@@ -21,6 +20,18 @@ var (
 	PhoneHasRegister = fmt.Sprintf("手机号已经注册")
 )
 
+/*
+入参
+{
+	"username": "davveo",
+	"email": "test@qq.com",
+	"phone": "1213213123",
+	"code": "123123"
+}
+
+返回
+
+*/
 func Register(context *gin.Context) {
 	var userRequest request.UserRequest
 	clientIp := ip.ClientIP(context.Request)
@@ -64,54 +75,74 @@ func Register(context *gin.Context) {
 	response.Ok(context)
 }
 
-// username/phone三者择一
-// password	必传
+/*
+入参
+{
+	"loginid": "",
+	"password": ""
+}
+返回
+
+*/
+
 func Login(context *gin.Context) {
-	var (
-		loginRequest request.LoginRequest
-		account      *models.Account
-	)
-
+	var loginRequest request.LoginRequest
 	clientIp := ip.ClientIP(context.Request)
-
 	if err := context.ShouldBindJSON(&loginRequest); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-
-	if loginRequest.UserName != "" {
-		account, _ = services.AccountService.FindByName(loginRequest.UserName)
-	}
-
-	if loginRequest.Phone != "" {
-		account, _ = services.AccountService.FindByPhone(loginRequest.Phone)
-	}
-
-	if account != nil {
-		// 获取用户信息
-		user, err := services.UserService.FindByUid(account.ID)
-		if err != nil {
-			response.FailWithMessage(err.Error(), context)
-			return
-		}
-		// 更新账户信息
-		_ = services.AccountService.UpdateAccount(clientIp, account)
-
-		response.OkWithData(
-			map[string]interface{}{
-				"nickname": user.NickName,
-				"avatar":   user.Avatar,
-				"user_id":  user.ID,
-			}, context)
+	// loginRequest.LoginId == email/username
+	user, err := LoginTool(clientIp, loginRequest.LoginId)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
 		return
-
 	}
-	response.FailWithMoreMessage("", "用户不存在", context)
-	return
+	response.OkWithData(
+		map[string]interface{}{
+			"nickname": user.NickName,
+			"avatar":   user.Avatar,
+			"user_id":  user.ID,
+		}, context)
 }
 
-func FastLogin(context *gin.Context) {
+/*
+快速登录
+入参
+{
+	"login_id": "123321312",  //手机号或者邮箱
+	"code": "31313"
+}
+*/
 
+func FastLogin(context *gin.Context) {
+	var fastLoginRequest request.FastLoginRequest
+	clientIp := ip.ClientIP(context.Request)
+	if err := context.ShouldBindJSON(&fastLoginRequest); err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	verifycodestr := fmt.Sprintf("verifycode:%s", fastLoginRequest.Phone)
+	bverifycode, _ := Cache.Get(verifycodestr)
+	_ = Cache.Delete(verifycodestr)
+
+	if str.ByteTostr(bverifycode) != fastLoginRequest.Code {
+		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		return
+	}
+
+	user, err := LoginTool(clientIp, fastLoginRequest.Phone)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+
+	response.OkWithData(
+		map[string]interface{}{
+			"nickname": user.NickName,
+			"avatar":   user.Avatar,
+			"user_id":  user.ID,
+		}, context)
 }
 
 func OauthLogin(context *gin.Context) {
@@ -138,4 +169,20 @@ func Update(context *gin.Context) {
 
 func List(context *gin.Context) {
 
+}
+
+func LoginTool(clientIp, identify string) (user *models.User, err error) {
+	account, err := services.AccountService.FindByLoginId(identify)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err = services.UserService.FindByUid(account.ID)
+	if err != nil {
+		return nil, err
+	}
+	// 更新账户信息
+	_ = services.AccountService.UpdateAccount(clientIp, account)
+
+	return
 }

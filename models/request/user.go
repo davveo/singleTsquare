@@ -9,7 +9,11 @@ type UserRequest struct {
 }
 
 type LoginRequest struct {
-	UserName string `json:"username"`
-	Phone    string `json:"phone"`
+	LoginId  string `json:"loginid" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type FastLoginRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code" binding:"required"`
 }

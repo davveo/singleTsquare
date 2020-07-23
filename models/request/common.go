@@ -1,5 +1,5 @@
 package request
 
-type PhoneRequestJson struct {
-	Phone string `json:"phone"  binding:"required"`
+type LoginRequestJson struct {
+	LoginId string `json:"login_id"  binding:"required"`
 }
