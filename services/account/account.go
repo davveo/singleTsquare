@@ -16,6 +16,7 @@ import (
 
 var (
 	MinPasswordLength   = 6
+	DEFAULT_AVATAR_PATH = "./avatar.png"
 	ErrUserNotFound     = errors.New("user not found")
 	ErrUsernameTaken    = errors.New("username taken")
 	ErrUserPhoneTaken   = errors.New("phone has taken")
@@ -36,7 +37,7 @@ func NewService(db *gorm.DB, userService user.ServiceInterface) *Service {
 
 func (s *Service) Close() {}
 
-func (s *Service) Create(userName, password, phone, createIpAt string) (*models.User, error) {
+func (s *Service) Create(userName, password, phone, createIpAt string) (*models.Account, error) {
 	return s.createAccount(s.db, userName, password, phone, createIpAt)
 
 }
@@ -83,7 +84,7 @@ func (s *Service) UpdateAccount(lastLoginIpAt string, user *models.Account) erro
 func (s *Service) createAccount(
 	db *gorm.DB, userName,
 	passWord, phone,
-	createIpAt string) (*models.User, error) {
+	createIpAt string) (*models.Account, error) {
 	account := &models.Account{
 		Status:        1,
 		Phone:         phone,
@@ -111,17 +112,16 @@ func (s *Service) createAccount(
 		return nil, err
 	}
 	NickName := fmt.Sprintf("tsquare_%s", randomstr.GenRandomString(8))
-	member := &models.User{
-		Uid:      account.ID,
-		NickName: NickName,
-		Avatar:   "./avatar.png", // TODO 默认用户头像路径
-	}
-	if err := tx.Create(&member).Error; err != nil {
+
+	// TODO 默认用户头像路径
+	if _, err := s.userService.Create(
+		account.ID, 0, NickName,
+		DEFAULT_AVATAR_PATH, "unknow"); err != nil {
 		tx.Rollback()
 		return nil, err
 	}
 	tx.Commit()
-	return member, nil
+	return account, nil
 }
 
 func (s *Service) updateAccount(

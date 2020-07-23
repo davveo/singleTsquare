@@ -7,7 +7,7 @@ type ServiceInterface interface {
 	ExistByUserName(username string) bool
 	FindByPhone(phone string) (*models.Account, error)
 	FindByName(username string) (*models.Account, error)
-	UpdateAccount(lastLoginIpAt string, user *models.Account) error
-	Create(userName, password, phone, createIpAt string) (*models.User, error)
+	UpdateAccount(lastLoginIpAt string, account *models.Account) error
+	Create(userName, password, phone, createIpAt string) (*models.Account, error)
 	Close()
 }

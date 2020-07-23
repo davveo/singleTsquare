@@ -44,17 +44,17 @@ func Register(context *gin.Context) {
 		return
 	}
 
-	if services.UserService.UserExistByUsername(userRequest.UserName) {
+	if services.AccountService.ExistByUserName(userRequest.UserName) {
 		response.FailWithMoreMessage("", UserHasRegister, context)
 		return
 	}
 
-	if services.UserService.UserExistByPhone(userRequest.Phone) {
+	if services.AccountService.ExistByPhone(userRequest.Phone) {
 		response.FailWithMoreMessage("", PhoneHasRegister, context)
 		return
 	}
 
-	if _, err := services.UserService.Create(
+	if _, err := services.AccountService.Create(
 		userRequest.UserName,
 		userRequest.Password,
 		userRequest.Phone, clientIp); err != nil {
@@ -69,7 +69,7 @@ func Register(context *gin.Context) {
 func Login(context *gin.Context) {
 	var (
 		loginRequest request.LoginRequest
-		accountUser  *models.AccountUser
+		account      *models.Account
 	)
 
 	clientIp := ip.ClientIP(context.Request)
@@ -80,20 +80,34 @@ func Login(context *gin.Context) {
 	}
 
 	if loginRequest.UserName != "" {
-		accountUser, _ = services.UserService.FindUserByUsername(loginRequest.UserName)
+		account, _ = services.AccountService.FindByName(loginRequest.UserName)
 	}
 
 	if loginRequest.Phone != "" {
-		accountUser, _ = services.UserService.FindUserByPhone(loginRequest.Phone)
+		account, _ = services.AccountService.FindByPhone(loginRequest.Phone)
 	}
 
-	if accountUser != nil {
+	if account != nil {
+		// 获取用户信息
+		user, err := services.UserService.FindByUid(account.ID)
+		if err != nil {
+			response.FailWithMessage(err.Error(), context)
+			return
+		}
+		// 更新账户信息
+		_ = services.AccountService.UpdateAccount(clientIp, account)
 
-		// 更新用户信息
-		_ = services.UserService.UpdateUser(accountUser, clientIp)
-	} else {
-		// 用户不存在
+		response.OkWithData(
+			map[string]interface{}{
+				"nickname": user.NickName,
+				"avatar":   user.Avatar,
+				"user_id":  user.ID,
+			}, context)
+		return
+
 	}
+	response.FailWithMoreMessage("", "用户不存在", context)
+	return
 }
 
 func FastLogin(context *gin.Context) {

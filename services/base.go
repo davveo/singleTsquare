@@ -49,4 +49,5 @@ func Init(cfg *config.Config, db *gorm.DB) error {
 func Close() {
 	HealthService.Close()
 	UserService.Close()
+	AccountService.Close()
 }

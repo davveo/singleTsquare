@@ -1,8 +1,14 @@
 package user
 
 import (
+	"errors"
+
 	"github.com/davveo/singleTsquare/models"
 	"github.com/jinzhu/gorm"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type Service struct {
@@ -24,6 +30,18 @@ func (s *Service) Create(uid, role uint, nickName, avatar, gender string) (*mode
 
 func (s *Service) UpdateUser(user *models.User, role uint, nickName, avatar, gender string) error {
 	return s.updateUser(s.db, user, role, nickName, avatar, gender)
+}
+
+func (s *Service) FindByUid(uid uint) (*models.User, error) {
+	user := new(models.User)
+	notFound := s.db.Where("uid = ?", uid).
+		Take(&user).RecordNotFound()
+
+	if notFound {
+		return nil, ErrUserNotFound
+	}
+
+	return user, nil
 }
 
 func (s *Service) createUser(tx *gorm.DB,
