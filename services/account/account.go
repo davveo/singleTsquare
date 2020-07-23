@@ -37,8 +37,8 @@ func NewService(db *gorm.DB, userService user.ServiceInterface) *Service {
 
 func (s *Service) Close() {}
 
-func (s *Service) Create(userName, password, phone, createIpAt string) (*models.Account, error) {
-	return s.createAccount(s.db, userName, password, phone, createIpAt)
+func (s *Service) Create(userName, password, phone, email, createIpAt string) (*models.Account, error) {
+	return s.createAccount(s.db, userName, password, phone, email, createIpAt)
 
 }
 
@@ -89,6 +89,11 @@ func (s *Service) ExistByPhone(phone string) bool {
 	return err == nil
 }
 
+func (s *Service) ExistByMail(email string) bool {
+	_, err := s.FindByEmail(email)
+	return err == nil
+}
+
 func (s *Service) UpdateAccount(lastLoginIpAt string, user *models.Account) error {
 	return s.updateAccount(s.db, lastLoginIpAt, user)
 }
@@ -96,25 +101,23 @@ func (s *Service) UpdateAccount(lastLoginIpAt string, user *models.Account) erro
 func (s *Service) FindByLoginId(loginId string) (*models.Account, error) {
 	// login_id= email或者phone
 	var account *models.Account
-	account, _ = s.FindByEmail(loginId)
-	if account != nil {
-		return account, nil
+	notFound := s.db.Where("email = LOWER(?)", loginId).
+		Or("username = LOWER(?)", loginId).
+		Take(&account).RecordNotFound()
+	if notFound {
+		return nil, ErrUserNotFound
 	}
-
-	account, _ = s.FindByName(loginId)
-	if account != nil {
-		return account, nil
-	}
-	return nil, ErrUserNotFound
+	return account, nil
 }
 
 func (s *Service) createAccount(
 	db *gorm.DB, userName,
-	passWord, phone,
+	passWord, phone, email,
 	createIpAt string) (*models.Account, error) {
 	account := &models.Account{
 		Status:        1,
 		Phone:         phone,
+		Email:         email,
 		UserName:      userName,
 		CreateIpAt:    createIpAt,
 		LastLoginIpAt: createIpAt,

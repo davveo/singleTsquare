@@ -16,8 +16,9 @@ import (
 var (
 	ErrorPassword    = fmt.Sprintf("两次密码不一致")
 	ErrorVerifyCode  = fmt.Sprintf("验证码不正确")
-	UserHasRegister  = fmt.Sprintf("用户名已经注册")
+	UserHasExist     = fmt.Sprintf("用户名已经存在")
 	PhoneHasRegister = fmt.Sprintf("手机号已经注册")
+	EmailHasExist    = fmt.Sprintf("邮箱已存在")
 )
 
 /*
@@ -56,7 +57,7 @@ func Register(context *gin.Context) {
 	}
 
 	if services.AccountService.ExistByUserName(userRequest.UserName) {
-		response.FailWithMoreMessage("", UserHasRegister, context)
+		response.FailWithMoreMessage("", UserHasExist, context)
 		return
 	}
 
@@ -64,11 +65,17 @@ func Register(context *gin.Context) {
 		response.FailWithMoreMessage("", PhoneHasRegister, context)
 		return
 	}
+	if services.AccountService.ExistByMail(userRequest.Email) {
+		response.FailWithMoreMessage("", EmailHasExist, context)
+		return
+	}
 
 	if _, err := services.AccountService.Create(
 		userRequest.UserName,
 		userRequest.Password,
-		userRequest.Phone, clientIp); err != nil {
+		userRequest.Phone,
+		userRequest.Email,
+		clientIp); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
