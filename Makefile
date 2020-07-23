@@ -23,3 +23,4 @@ run: clean build
 push: clean
 	git status
 	git commit -am"$(msg)"
+	git push
