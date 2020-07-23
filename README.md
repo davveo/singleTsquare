@@ -1,10 +1,10 @@
 ### singleTsquare
   单体版本
-### usage
-> 执行数据库迁移
+### 本地开发
+> step one: 执行数据库迁移
 > make migrate
 
-> 运行服务
+> step two: 运行服务
 > make run
 
 > 清理服务
@@ -18,7 +18,8 @@
     data object 数据 json格式
     
 分页
-    {
+```json
+{
         "code": 0,
         "showMsg": "success",
         "errorMsg": "",
@@ -30,7 +31,8 @@
                 "prePageCount": 10
             }
         }
-    }
+}
+```
     
 ### feature
     1. 使用高性能的本地缓存bigcache
