@@ -8,10 +8,15 @@ import (
 	"strings"
 )
 
+// TODO 配置的处理
 const (
-	AppId       = "101827468"
-	AppKey      = "0d2d856e48e0ebf6b98e0d0c879fe74d"
-	redirectURI = "http://127.0.0.1:9090/qqLogin"
+	AppId        = "101827468"
+	AppKey       = "0d2d856e48e0ebf6b98e0d0c879fe74d"
+	RedirectURL  = "http://127.0.0.1:9090/api/v1/qqLogin" // TODO host动态获取
+	TokenURL     = "https://graph.qq.com/oauth2.0/token"
+	AuthorizeURL = "https://graph.qq.com/oauth2.0/authorize"
+	MeURL        = "https://graph.qq.com/oauth2.0/me"
+	UserInfoURL  = "https://graph.qq.com/user/get_user_info"
 )
 
 type PrivateInfo struct {
@@ -21,41 +26,21 @@ type PrivateInfo struct {
 	OpenId       string `json:"openid"`
 }
 
-func main() {
-	http.HandleFunc("/toLogin", GetAuthCode)
-	http.HandleFunc("/qqLogin", GetToken)
-
-	fmt.Println("started...")
-	err := http.ListenAndServe(":9090", nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func GetAuthCode(w http.ResponseWriter, r *http.Request) {
-	params := url.Values{}
-	params.Add("response_type", "code")
-	params.Add("client_id", AppId)
-	params.Add("state", "test")
-	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), redirectURI)
-	loginURL := fmt.Sprintf("%s?%s", "https://graph.qq.com/oauth2.0/authorize", str)
-
-	http.Redirect(w, r, loginURL, http.StatusFound)
-}
-
-func GetToken(w http.ResponseWriter, r *http.Request) {
-	code := r.FormValue("code")
+func TokenParams(code string) string {
 	params := url.Values{}
 	params.Add("grant_type", "authorization_code")
 	params.Add("client_id", AppId)
 	params.Add("client_secret", AppKey)
 	params.Add("code", code)
-	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), redirectURI)
-	loginURL := fmt.Sprintf("%s?%s", "https://graph.qq.com/oauth2.0/token", str)
+	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURL)
+	return fmt.Sprintf("%s?%s", TokenURL, str)
+}
 
-	response, err := http.Get(loginURL)
+func GetToken(code string) (*PrivateInfo, error) {
+	loginUrl := TokenParams(code)
+	response, err := http.Get(loginUrl)
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		return nil, err
 	}
 	defer response.Body.Close()
 
@@ -69,38 +54,37 @@ func GetToken(w http.ResponseWriter, r *http.Request) {
 	info.RefreshToken = resultMap["refresh_token"]
 	info.ExpiresIn = resultMap["expires_in"]
 
-	GetOpenId(info, w)
+	return info, nil
 }
 
-func GetOpenId(info *PrivateInfo, w http.ResponseWriter) {
-	resp, err := http.Get(fmt.Sprintf("%s?access_token=%s", "https://graph.qq.com/oauth2.0/me", info.AccessToken))
+// 根据access_token获取openid
+func GetOpenId(info *PrivateInfo) (*PrivateInfo, error) {
+	resp, err := http.Get(fmt.Sprintf(
+		"%s?access_token=%s", MeURL, info.AccessToken))
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		return nil, err
 	}
 	defer resp.Body.Close()
-
 	bs, _ := ioutil.ReadAll(resp.Body)
 	body := string(bs)
 	info.OpenId = body[45:77]
-
-	GetUserInfo(info, w)
+	return info, nil
 }
 
-func GetUserInfo(info *PrivateInfo, w http.ResponseWriter) {
+func GetUserInfo(info *PrivateInfo) (string, error) {
 	params := url.Values{}
 	params.Add("access_token", info.AccessToken)
 	params.Add("openid", info.OpenId)
 	params.Add("oauth_consumer_key", AppId)
 
-	uri := fmt.Sprintf("https://graph.qq.com/user/get_user_info?%s", params.Encode())
+	uri := fmt.Sprintf("%s?%s", UserInfoURL, params.Encode())
 	resp, err := http.Get(uri)
 	if err != nil {
-		w.Write([]byte(err.Error()))
+		return "", err
 	}
 	defer resp.Body.Close()
-
 	bs, _ := ioutil.ReadAll(resp.Body)
-	w.Write(bs)
+	return string(bs), nil
 }
 
 func convertToMap(str string) map[string]string {
@@ -111,4 +95,14 @@ func convertToMap(str string) map[string]string {
 		resultMap[vs[0]] = vs[1]
 	}
 	return resultMap
+}
+
+func GenRedirectURL() string {
+	params := url.Values{}
+	params.Add("response_type", "code")
+	params.Add("client_id", AppId)
+	params.Add("state", "test")
+	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURL)
+	loginURL := fmt.Sprintf("%s?%s", AuthorizeURL, str)
+	return loginURL
 }

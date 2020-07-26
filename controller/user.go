@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"github.com/davveo/singleTsquare/models"
+	"github.com/davveo/singleTsquare/utils/oauth2"
+	"net/http"
 
 	"github.com/davveo/singleTsquare/services"
 
@@ -152,7 +154,19 @@ func FastLogin(context *gin.Context) {
 		}, context)
 }
 
+// api/v1/user/oauth_login?service=qq
+// service = qq/weibo/github/facebook/wechat
 func OauthLogin(context *gin.Context) {
+	service := context.DefaultQuery("service", "qq")
+	redirectUrl, err := oauth2.ServiceRedirectURL(service)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+	}
+	context.Redirect(http.StatusMovedPermanently, redirectUrl)
+}
+
+// 扫码登录
+func ScanLogin(context *gin.Context) {
 
 }
 
@@ -161,17 +175,19 @@ func Logout(context *gin.Context) {
 }
 
 func Get(context *gin.Context) {
-
+	userId := context.DefaultQuery("user_id", "")
+	fmt.Println(userId)
 }
 
 func Update(context *gin.Context) {
-	// 获取uri参数
-	userId := context.Param("userId")
-
 	// 获取query参数
-	name := context.DefaultQuery("name", "")
+	userId := context.DefaultQuery("user_id", "")
 
-	fmt.Println(userId, name)
+	fmt.Println(userId)
+}
+
+func ChangePassword(context *gin.Context) {
+
 }
 
 func List(context *gin.Context) {

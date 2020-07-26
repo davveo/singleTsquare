@@ -22,11 +22,11 @@ func MigrateAll(db *gorm.DB) error {
 }
 
 func migrate0001(db *gorm.DB, name string) error {
-	if err := db.CreateTable(new(models.AccountUser)).Error; err != nil {
+	if err := db.CreateTable(new(models.Account)).Error; err != nil {
 		return fmt.Errorf("Error creating AccountUser table: %s", err)
 	}
 
-	if err := db.CreateTable(new(models.Member)).Error; err != nil {
+	if err := db.CreateTable(new(models.User)).Error; err != nil {
 		return fmt.Errorf("Error creating Member table: %s", err)
 	}
 

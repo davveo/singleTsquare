@@ -2,9 +2,18 @@ package github
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
+	"net/url"
+)
+
+const (
+	AuthorizeURL = "https://github.com/login/oauth/authorize"
+	AppId        = "101827468"
+	RedirectURI  = "http://127.0.0.1:8080/oauth2/"
+	TokenURL     = "https://github.com/login/oauth/access_token"
+	UserInfoURL  = "https://api.github.com/user"
 )
 
 type Conf struct {
@@ -25,75 +34,39 @@ type Token struct {
 	Scope       string `json:"scope"`      // 这个字段下面也没用到
 }
 
-// 返回欢迎页面
-func Hello(w http.ResponseWriter, r *http.Request) {
-	// 解析指定文件生成模板对象
-	var temp *template.Template
-	var err error
-	if temp, err = template.ParseFiles("views/hello.html"); err != nil {
-		fmt.Println("读取文件失败，错误信息为:", err)
-		return
-	}
-
-	// 利用给定数据渲染模板(html页面)，并将结果写入w，返回给前端
-	if err = temp.Execute(w, conf); err != nil {
-		fmt.Println("读取渲染html页面失败，错误信息为:", err)
-		return
-	}
-}
-
 // 认证并获取用户信息
-func Oauth(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// 获取 code
-	var code = r.URL.Query().Get("code")
-
+func Oauth(code string) (userInfo map[string]interface{}, err error) {
 	// 通过 code, 获取 token
-	var tokenAuthUrl = GetTokenAuthUrl(code)
 	var token *Token
+	var tokenAuthUrl = GetTokenAuthUrl(code)
 	if token, err = GetToken(tokenAuthUrl); err != nil {
-		fmt.Println(err)
-		return
+		return nil, errors.New(fmt.Sprintf("获取Token失败，错误信息为:%s", err))
 	}
 
 	// 通过token，获取用户信息
-	var userInfo map[string]interface{}
-	if userInfo, err = GetUserInfo(token); err != nil {
-		fmt.Println("获取用户信息失败，错误信息为:", err)
-		return
+	userInfo, err = GetUserInfo(token)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("获取用户信息失败，错误信息为:%s", err))
 	}
-
-	//  将用户信息返回前端
-	var userInfoBytes []byte
-	if userInfoBytes, err = json.Marshal(userInfo); err != nil {
-		fmt.Println("在将用户信息(map)转为用户信息([]byte)时发生错误，错误信息为:", err)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err = w.Write(userInfoBytes); err != nil {
-		fmt.Println("在将用户信息([]byte)返回前端时发生错误，错误信息为:", err)
-		return
-	}
-
+	return userInfo, nil
 }
 
 // 通过code获取token认证url
 func GetTokenAuthUrl(code string) string {
 	return fmt.Sprintf(
-		"https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s",
-		conf.ClientId, conf.ClientSecret, code,
+		"%s?client_id=%s&client_secret=%s&code=%s",
+		TokenURL, conf.ClientId, conf.ClientSecret, code,
 	)
 }
 
 // 获取 token
-func GetToken(url string) (*Token, error) {
-
+func GetToken(code string) (*Token, error) {
 	// 形成请求
 	var req *http.Request
 	var err error
-	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
+	if req, err = http.NewRequest(
+		http.MethodGet,
+		GetTokenAuthUrl(code), nil); err != nil {
 		return nil, err
 	}
 	req.Header.Set("accept", "application/json")
@@ -116,11 +89,9 @@ func GetToken(url string) (*Token, error) {
 // 获取用户信息
 func GetUserInfo(token *Token) (map[string]interface{}, error) {
 
-	// 形成请求
-	var userInfoUrl = "https://api.github.com/user" // github用户信息获取接口
 	var req *http.Request
 	var err error
-	if req, err = http.NewRequest(http.MethodGet, userInfoUrl, nil); err != nil {
+	if req, err = http.NewRequest(http.MethodGet, UserInfoURL, nil); err != nil {
 		return nil, err
 	}
 	req.Header.Set("accept", "application/json")
@@ -141,12 +112,12 @@ func GetUserInfo(token *Token) (map[string]interface{}, error) {
 	return userInfo, nil
 }
 
-func main() {
-	http.HandleFunc("/", Hello)
-	http.HandleFunc("/oauth/redirect", Oauth) // 这个和 Authorization callback URL 有关
-
-	if err := http.ListenAndServe(":9090", nil); err != nil {
-		fmt.Println("监听失败，错误信息为:", err)
-		return
-	}
+func GenRedirectURL() string {
+	// 跳转到第三方地址
+	params := url.Values{}
+	params.Add("client_id", AppId)
+	params.Add("state", "state")
+	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURI)
+	loginURL := fmt.Sprintf("%s?%s", AuthorizeURL, str)
+	return loginURL
 }

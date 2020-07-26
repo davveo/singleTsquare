@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/davveo/singleTsquare/utils/common"
 	"github.com/davveo/singleTsquare/utils/email"
+	"github.com/davveo/singleTsquare/utils/oauth2/github"
+	"github.com/davveo/singleTsquare/utils/oauth2/qq"
+	"github.com/davveo/singleTsquare/utils/oauth2/weibo"
 	"time"
 
 	"github.com/davveo/singleTsquare/utils/sms"
@@ -85,4 +88,73 @@ func Captcha(context *gin.Context) {
 
 func HealthCheck(context *gin.Context) {
 	response.Ok(context)
+}
+
+func QrCode(context *gin.Context) {
+
+}
+
+// qq授权回调
+func QQLoginCallBack(context *gin.Context) {
+	codeStr := context.DefaultQuery("code", "")
+
+	// 获取token
+	tokenInfo, err := qq.GetToken(codeStr)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// 获取openId
+	openidInfo, err := qq.GetOpenId(tokenInfo)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// 获取用户信息
+	userInfo, err := qq.GetUserInfo(openidInfo)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// TODO 用户信息保存
+	fmt.Println(userInfo)
+	response.Ok(context)
+}
+
+// 微博授权回调
+func WBLoginCallBack(context *gin.Context) {
+	codeStr := context.DefaultQuery("code", "")
+	// 获取token
+	tokenInfo, err := weibo.GetToken(codeStr)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// 获取用户信息
+	userInfo, err := weibo.GetUserInfo(tokenInfo)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// TODO 用户信息保存
+	fmt.Println(userInfo)
+	response.Ok(context)
+}
+
+// github授权回调
+func GBLoginCallBack(context *gin.Context) {
+	codeStr := context.DefaultQuery("code", "")
+	userinfo, err := github.Oauth(codeStr)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// TODO 用户信息入库
+	fmt.Println(userinfo)
+	response.Ok(context)
+}
+
+// 微信授权回调
+func WCLoginCallBack(context *gin.Context) {
+
 }
