@@ -143,20 +143,39 @@ func QQLoginCallBack(context *gin.Context) {
 func WBLoginCallBack(context *gin.Context) {
 	codeStr := context.DefaultQuery("code", "")
 	// 获取token
-	tokenInfo, err := weibo.GetToken(codeStr)
+	userInfo, err := weibo.GetUserInfo(codeStr)
 	if err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-	// 获取用户信息
-	userInfo, err := weibo.GetUserInfo(tokenInfo)
+
+	accountPlatform, _ := services.AccountPlatformService.FindByIdentifyId(userInfo.OpenId)
+	if accountPlatform != nil { // 如果存在, 则更新
+		_ = services.AccountPlatformService.UpdateByIdentifyId(
+			userInfo.AccessToken,
+			userInfo.NickName,
+			userInfo.Avatar,
+			accountPlatform)
+	}
+	accountPlatformUser, err := services.AccountPlatformService.Create(
+		0, // 默认, 等待后续绑定
+		models.GetPlatformType("weibo"),
+		userInfo.OpenId,
+		userInfo.AccessToken,
+		userInfo.NickName,
+		userInfo.Avatar)
+
 	if err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-	// TODO 用户信息保存
-	fmt.Println(userInfo)
-	response.Ok(context)
+	// 返回用户信息
+	response.OkWithData(map[string]interface{}{
+		"uid":         accountPlatformUser.Uid,
+		"avatar":      accountPlatformUser.Avatar,
+		"nickname":    accountPlatformUser.NickName,
+		"identify_id": accountPlatformUser.IdentifyId,
+	}, context)
 }
 
 // github授权回调

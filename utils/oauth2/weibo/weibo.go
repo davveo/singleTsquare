@@ -16,6 +16,7 @@ const (
 	TokenURL     = "https://api.weibo.com/oauth2/access_token"
 	AuthorizeURL = "https://api.weibo.com/oauth2/authorize"
 	UserInfoURL  = "https://api.weibo.com/2/users/show.json"
+	OpenIdURL    = "https://api.weibo.com/oauth2/get_token_info"
 )
 
 type AccessTokenInfo struct {
@@ -25,12 +26,19 @@ type AccessTokenInfo struct {
 	Uid         string `json:"uid"`
 }
 
+type UserInfo struct {
+	NickName    string `json:"name"`
+	OpenId      string `json:"openid"`
+	Avatar      string `json:"avatar_large"`
+	AccessToken string `json:"access_token"`
+}
+
 func TokenParams(code string) string {
 	params := url.Values{}
-	params.Add("grant_type", "authorization_code")
+	params.Add("code", code)
 	params.Add("client_id", AppId)
 	params.Add("client_secret", AppKey)
-	params.Add("code", code)
+	params.Add("grant_type", "authorization_code")
 	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURL)
 	return fmt.Sprintf("%s?%s", TokenURL, str)
 }
@@ -50,19 +58,31 @@ func GetToken(code string) (*AccessTokenInfo, error) {
 	return accessTokenInfo, nil
 }
 
-func GetUserInfo(accessTokenInfo *AccessTokenInfo) (string, error) {
+func GetUserInfo(code string) (*UserInfo, error) {
+	var userInfo *UserInfo
+	accessTokenInfo, err := GetToken(code)
+	if err != nil {
+		return nil, err
+	}
+
 	params := url.Values{}
 	params.Add("access_token", accessTokenInfo.AccessToken)
 	params.Add("uid", accessTokenInfo.Uid)
-
 	uri := fmt.Sprintf("%s?%s", UserInfoURL, params.Encode())
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	bs, _ := ioutil.ReadAll(resp.Body)
-	return string(bs), nil
+	err = json.Unmarshal(bs, &userInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo.OpenId = accessTokenInfo.Uid
+	userInfo.AccessToken = accessTokenInfo.AccessToken
+	return userInfo, nil
 }
 
 func GenRedirectURL() string {
