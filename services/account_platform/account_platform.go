@@ -20,7 +20,7 @@ func NewService(db *gorm.DB) *Service {
 func (s *Service) Close() {}
 
 // 根据用户标示查找用户信息
-func (s *Service) FindByIdentifyId(identifyId uint) (*models.AccountPlatform, error) {
+func (s *Service) FindByIdentifyId(identifyId string) (*models.AccountPlatform, error) {
 	accountPlatform := new(models.AccountPlatform)
 	notFound := s.db.Where("identify_id = LOWER(?)", identifyId).
 		Take(&accountPlatform).RecordNotFound()
@@ -32,23 +32,20 @@ func (s *Service) FindByIdentifyId(identifyId uint) (*models.AccountPlatform, er
 }
 
 // 根据用户唯一标示更新用户信息
-func (s *Service) UpdateByIdentifyId(identifyId uint) error {
-	accountPlatform, err := s.FindByIdentifyId(identifyId)
-	if err != nil {
-		return errors.New("用户不存在, 更新失败")
-	}
-	return s.updateAccountPlatform(s.db, identifyId, accountPlatform)
+func (s *Service) UpdateByIdentifyId(accesstoken,
+	nickname, avatar string, accountPlatform *models.AccountPlatform) error {
+	return s.updateAccountPlatform(s.db, accesstoken, nickname, avatar, accountPlatform)
 }
 
 // 创建用户信息
-func (s *Service) Create(uid, identifyId, platformType uint,
-	accesstoken, nickname, avatar string) (*models.AccountPlatform, error) {
-	return s.createAccountPlatform(s.db, uid, identifyId, platformType, accesstoken, nickname, avatar)
+func (s *Service) Create(uid, platformType uint,
+	identifyId, accesstoken, nickname, avatar string) (*models.AccountPlatform, error) {
+	return s.createAccountPlatform(s.db, uid, platformType, identifyId, accesstoken, nickname, avatar)
 }
 
 func (s *Service) createAccountPlatform(
-	db *gorm.DB, uid, identifyId, platformType uint,
-	accesstoken, nickname, avatar string) (*models.AccountPlatform, error) {
+	db *gorm.DB, uid, platformType uint,
+	identifyId, accesstoken, nickname, avatar string) (*models.AccountPlatform, error) {
 	accountPlatform := &models.AccountPlatform{
 		Uid:          uid,
 		IdentifyId:   identifyId,
@@ -64,10 +61,12 @@ func (s *Service) createAccountPlatform(
 }
 
 func (s *Service) updateAccountPlatform(
-	db *gorm.DB, identifyId uint,
+	db *gorm.DB, accesstoken, nickname, avatar string,
 	accountPlatform *models.AccountPlatform) error {
 	accountPlatformUser := models.AccountPlatform{
-		IdentifyId: identifyId,
+		Accesstoken: accesstoken,
+		NickName:    nickname,
+		Avatar:      avatar,
 	}
 	return db.Model(&accountPlatform).Updates(&accountPlatformUser).Error
 }

@@ -27,6 +27,13 @@ type PrivateInfo struct {
 	OpenId       string `json:"openid"`
 }
 
+type UserInfo struct {
+	NickName    string `json:"nickname"`
+	OpenId      string `json:"openid"`
+	Avatar      string `json:"figureurl_qq_2"`
+	AccessToken string `json:"access_token"`
+}
+
 func RequestAccessToken(code string) (*PrivateInfo, error) {
 	params := url.Values{}
 	params.Add("grant_type", "authorization_code")
@@ -66,19 +73,19 @@ func GetOpenId(accessToken string) (string, error) {
 	return string(bs)[45:77], nil
 }
 
-func GetUserInfo(code string) (map[string]interface{}, error) {
-	var userInfo = make(map[string]interface{})
-
+func GetUserInfo(code string) (*UserInfo, error) {
+	var userInfo *UserInfo
 	tokenInfo, err := RequestAccessToken(code)
 	if err != nil {
 		return nil, err
 	}
 
 	params := url.Values{}
-	openid, _ := GetOpenId(tokenInfo.AccessToken)
+	accessToken := tokenInfo.AccessToken
+	openid, _ := GetOpenId(accessToken)
 	params.Add("openid", openid)
 	params.Add("oauth_consumer_key", AppId)
-	params.Add("access_token", tokenInfo.AccessToken)
+	params.Add("access_token", accessToken)
 
 	resp, err := http.Get(fmt.Sprintf(
 		"%s?%s", UserInfoURL, params.Encode()))
@@ -92,9 +99,9 @@ func GetUserInfo(code string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// 将用户的标示写入
-	userInfo["openid"] = openid
+	userInfo.OpenId = openid
+	userInfo.AccessToken = accessToken
 
 	return userInfo, nil
 }

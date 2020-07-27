@@ -9,6 +9,7 @@ require (
 	github.com/gookit/validate v1.2.2
 	github.com/jinzhu/configor v1.2.0
 	github.com/jinzhu/gorm v1.9.15
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mojocn/base64Captcha v1.3.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/urfave/cli v1.22.4
