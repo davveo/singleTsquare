@@ -1,6 +1,7 @@
 package qq
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +16,7 @@ const (
 	RedirectURL  = "http://127.0.0.1:9090/api/v1/qqLogin" // TODO host动态获取
 	TokenURL     = "https://graph.qq.com/oauth2.0/token"
 	AuthorizeURL = "https://graph.qq.com/oauth2.0/authorize"
-	MeURL        = "https://graph.qq.com/oauth2.0/me"
+	OpenidUrl    = "https://graph.qq.com/oauth2.0/me"
 	UserInfoURL  = "https://graph.qq.com/user/get_user_info"
 )
 
@@ -26,19 +27,16 @@ type PrivateInfo struct {
 	OpenId       string `json:"openid"`
 }
 
-func TokenParams(code string) string {
+func RequestAccessToken(code string) (*PrivateInfo, error) {
 	params := url.Values{}
 	params.Add("grant_type", "authorization_code")
 	params.Add("client_id", AppId)
 	params.Add("client_secret", AppKey)
 	params.Add("code", code)
 	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURL)
-	return fmt.Sprintf("%s?%s", TokenURL, str)
-}
-
-func GetToken(code string) (*PrivateInfo, error) {
-	loginUrl := TokenParams(code)
+	loginUrl := fmt.Sprintf("%s?%s", TokenURL, str)
 	response, err := http.Get(loginUrl)
+
 	if err != nil {
 		return nil, err
 	}
@@ -57,34 +55,48 @@ func GetToken(code string) (*PrivateInfo, error) {
 	return info, nil
 }
 
-// 根据access_token获取openid
-func GetOpenId(info *PrivateInfo) (*PrivateInfo, error) {
+func GetOpenId(accessToken string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf(
-		"%s?access_token=%s", MeURL, info.AccessToken))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	bs, _ := ioutil.ReadAll(resp.Body)
-	body := string(bs)
-	info.OpenId = body[45:77]
-	return info, nil
-}
-
-func GetUserInfo(info *PrivateInfo) (string, error) {
-	params := url.Values{}
-	params.Add("access_token", info.AccessToken)
-	params.Add("openid", info.OpenId)
-	params.Add("oauth_consumer_key", AppId)
-
-	uri := fmt.Sprintf("%s?%s", UserInfoURL, params.Encode())
-	resp, err := http.Get(uri)
+		"%s?access_token=%s", OpenidUrl, accessToken))
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 	bs, _ := ioutil.ReadAll(resp.Body)
-	return string(bs), nil
+	return string(bs)[45:77], nil
+}
+
+func GetUserInfo(code string) (map[string]interface{}, error) {
+	var userInfo = make(map[string]interface{})
+
+	tokenInfo, err := RequestAccessToken(code)
+	if err != nil {
+		return nil, err
+	}
+
+	params := url.Values{}
+	openid, _ := GetOpenId(tokenInfo.AccessToken)
+	params.Add("openid", openid)
+	params.Add("oauth_consumer_key", AppId)
+	params.Add("access_token", tokenInfo.AccessToken)
+
+	resp, err := http.Get(fmt.Sprintf(
+		"%s?%s", UserInfoURL, params.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	bs, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(bs, &userInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	// 将用户的标示写入
+	userInfo["openid"] = openid
+
+	return userInfo, nil
 }
 
 func convertToMap(str string) map[string]string {

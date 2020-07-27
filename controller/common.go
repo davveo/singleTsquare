@@ -2,12 +2,15 @@ package controller
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/davveo/singleTsquare/services"
+
 	"github.com/davveo/singleTsquare/utils/common"
 	"github.com/davveo/singleTsquare/utils/email"
 	"github.com/davveo/singleTsquare/utils/oauth2/github"
 	"github.com/davveo/singleTsquare/utils/oauth2/qq"
 	"github.com/davveo/singleTsquare/utils/oauth2/weibo"
-	"time"
 
 	"github.com/davveo/singleTsquare/utils/sms"
 
@@ -97,26 +100,13 @@ func QrCode(context *gin.Context) {
 // qq授权回调
 func QQLoginCallBack(context *gin.Context) {
 	codeStr := context.DefaultQuery("code", "")
-
-	// 获取token
-	tokenInfo, err := qq.GetToken(codeStr)
+	userInfo, err := qq.GetUserInfo(codeStr)
 	if err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-	// 获取openId
-	openidInfo, err := qq.GetOpenId(tokenInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// 获取用户信息
-	userInfo, err := qq.GetUserInfo(openidInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// TODO 用户信息保存
+	// TODO 需要将用户的信息与第三方信息做一个绑定
+	services.UserService.FindByUid()
 	fmt.Println(userInfo)
 	response.Ok(context)
 }

@@ -30,7 +30,11 @@ func migrate0001(db *gorm.DB, name string) error {
 		return fmt.Errorf("Error creating Member table: %s", err)
 	}
 
-	//err := db.Model(new(OauthUser)).AddForeignKey(
+	if err := db.CreateTable(new(models.AccountPlatform)).Error; err != nil {
+		return fmt.Errorf("Error creating AccountPlatform table: %s", err)
+	}
+
+	//err := db.Model(new(OauthUser)).AdForeignKey(
 	//	"role_id", "oauth_roles(id)",
 	//	"RESTRICT", "RESTRICT",
 	//).Error

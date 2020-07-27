@@ -39,7 +39,6 @@ func (s *Service) Close() {}
 
 func (s *Service) Create(userName, password, phone, email, createIpAt string) (*models.Account, error) {
 	return s.createAccount(s.db, userName, password, phone, email, createIpAt)
-
 }
 
 func (s *Service) FindByName(username string) (*models.Account, error) {
@@ -164,5 +163,4 @@ func (s *Service) updateAccount(
 		LoginTimes:    user.LoginTimes + 1,
 	}
 	return db.Model(&user).Updates(&accountUser).Error
-
 }
