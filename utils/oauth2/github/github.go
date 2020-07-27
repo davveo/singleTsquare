@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	AuthorizeURL = "https://github.com/login/oauth/authorize"
 	AppId        = "101827468"
-	RedirectURI  = "http://127.0.0.1:8080/oauth2/"
-	TokenURL     = "https://github.com/login/oauth/access_token"
 	UserInfoURL  = "https://api.github.com/user"
+	RedirectURI  = "http://127.0.0.1:8080/oauth2"
+	AuthorizeURL = "https://github.com/login/oauth/authorize"
+	TokenURL     = "https://github.com/login/oauth/access_token"
 )
 
 type Conf struct {
