@@ -23,8 +23,8 @@ func NewService(db *gorm.DB) *Service {
 
 func (s *Service) Close() {}
 
-func (s *Service) Create(uid, role uint, nickName, avatar, gender string) (*models.User, error) {
-	return s.createUser(s.db, uid, role, nickName, avatar, gender)
+func (s *Service) Create(accountID, role uint, nickName, avatar, gender string) (*models.User, error) {
+	return s.createUser(s.db, accountID, role, nickName, avatar, gender)
 
 }
 
@@ -32,9 +32,9 @@ func (s *Service) UpdateUser(user *models.User, role uint, nickName, avatar, gen
 	return s.updateUser(s.db, user, role, nickName, avatar, gender)
 }
 
-func (s *Service) FindByUid(uid uint) (*models.User, error) {
+func (s *Service) FindByAccountID(accountID uint) (*models.User, error) {
 	user := new(models.User)
-	notFound := s.db.Where("uid = ?", uid).
+	notFound := s.db.Where("account_id = ?", accountID).
 		Take(&user).RecordNotFound()
 
 	if notFound {
@@ -45,14 +45,14 @@ func (s *Service) FindByUid(uid uint) (*models.User, error) {
 }
 
 func (s *Service) createUser(tx *gorm.DB,
-	uid, role uint, nickName,
+	accountID, role uint, nickName,
 	avatar, gender string) (user *models.User, err error) {
 	user = &models.User{
-		Uid:      uid,
-		NickName: nickName,
-		Avatar:   avatar,
-		Gender:   gender,
-		Role:     role,
+		AccountID: accountID,
+		NickName:  nickName,
+		Avatar:    avatar,
+		Gender:    gender,
+		Role:      role,
 	}
 
 	if err := tx.Create(user).Error; err != nil {

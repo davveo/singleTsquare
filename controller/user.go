@@ -1,14 +1,8 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/davveo/singleTsquare/utils/common"
-
-	"github.com/davveo/singleTsquare/utils/randomstr"
-
-	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/services"
 
 	"github.com/davveo/singleTsquare/models/request"
@@ -166,31 +160,20 @@ func ScanLogin(context *gin.Context) {
 
 }
 
-func Logout(context *gin.Context) {
-
+/*
+{
+	"account_id": "",
+	"password": "",
 }
-
-func Get(context *gin.Context) {
-	userId := context.DefaultQuery("user_id", "")
-	fmt.Println(userId)
-}
-
-func Update(context *gin.Context) {
-	// 获取query参数
-	userId := context.DefaultQuery("user_id", "")
-
-	fmt.Println(userId)
-}
-
+*/
 func ChangePassword(context *gin.Context) {
 
 }
 
+/*
+
+ */
 func ResetPassword(context *gin.Context) {
-
-}
-
-func List(context *gin.Context) {
 
 }
 
@@ -209,7 +192,7 @@ identify_id 必传
 phone + code
 login_id + password
 */
-func BindAccount(context *gin.Context) {
+func BindAccountController(context *gin.Context) {
 	// identify_id, phone, email, username
 	// 将第三方的identify_id与系统phone email username进行绑定
 	// 目前支持绑定手机号
@@ -228,77 +211,39 @@ func BindAccount(context *gin.Context) {
 		return
 	}
 	if bindRequest.Phone != "" && bindRequest.Code != "" { // phone+code
-		err = BindByPhone(clientIp, bindRequest, accountPlatform)
+		err = BindAccountByPhone(clientIp, bindRequest, accountPlatform)
+
 	} else if bindRequest.LoginId != "" && bindRequest.Password != "" { // loginRequest.LoginId == email/username
-		err = BindByEmailOrUserName(clientIp, bindRequest, accountPlatform)
-	} else {
-		response.FailWithMoreMessage("", "绑定失败!", context)
+		err = BindAccountByEmailOrUserName(clientIp, bindRequest, accountPlatform)
+	}
+	if err != nil {
+		response.FailWithMoreMessage(err.Error(), "绑定失败!", context)
 		return
 	}
-	response.OkWithMessage("绑定成功!", context)
+	response.OkDetailed(map[string]interface{}{
+		"nickname":            accountPlatform.NickName,
+		"avatar":              accountPlatform.Avatar,
+		"account_platform_id": accountPlatform.ID,
+		"account_id":          accountPlatform.AccountID,
+	}, "绑定成功!", context)
 }
 
-func BindByPhone(clientIp string,
-	bindRequest *request.BindRequest,
-	accountPlatform *models.AccountPlatform) error {
-	verifycodestr := fmt.Sprintf("verifycode:%s", bindRequest.Phone)
-	bverifycode, _ := Cache.Get(verifycodestr)
-	_ = Cache.Delete(verifycodestr)
-	if str.ByteTostr(bverifycode) != bindRequest.Code {
-		return errors.New(ErrorVerifyCode)
-	}
-	// 查找手机号
-	// 如果没有找到, 则进行创建, 然后绑定; 否则直接更新就行
-	userNameOrPassword := randomstr.GenRandomString(6)
-	accountService, err := shortAccountService.FindByPhone(bindRequest.Phone)
-	if err != nil { // 不存在
-		accountService, err = shortAccountService.Create(
-			userNameOrPassword, userNameOrPassword,
-			bindRequest.Phone, "", clientIp)
-		if err != nil {
-			return errors.New(FaildCreateAccount)
-		}
-	}
-	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
-		return errors.New(FaildUpdateAccount)
-	}
+func Logout(context *gin.Context) {
+
 }
 
-func BindByEmailOrUserName(clientIp string,
-	bindRequest *request.BindRequest,
-	accountPlatform *models.AccountPlatform) error {
-	accountService, err := shortAccountService.FindByLoginId(bindRequest.LoginId)
-	if err != nil { // 如果不存在呢?
-		userNameOrPassword := randomstr.GenRandomString(6)
-		// 需要判断login_id是邮箱还是username
-		if common.IsEmail(bindRequest.LoginId) {
-			accountService, err = shortAccountService.Create(
-				userNameOrPassword, bindRequest.Password, "", bindRequest.LoginId, clientIp)
-		} else {
-			accountService, err = shortAccountService.Create(
-				bindRequest.LoginId, bindRequest.Password, "", "", clientIp)
-		}
-		if err != nil {
-			return errors.New(BindFailed)
-		}
-	}
-	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
-		return errors.New(FaildUpdateAccount)
-	}
+func Get(context *gin.Context) {
+	userId := context.DefaultQuery("user_id", "")
+	fmt.Println(userId)
 }
 
-func LoginTool(clientIp, identify string) (user *models.User, err error) {
-	account, err := shortAccountService.FindByLoginId(identify)
-	if err != nil {
-		return nil, err
-	}
+func Update(context *gin.Context) {
+	// 获取query参数
+	userId := context.DefaultQuery("user_id", "")
 
-	user, err = services.UserService.FindByUid(account.ID)
-	if err != nil {
-		return nil, err
-	}
-	// 更新账户信息
-	_ = shortAccountService.UpdateAccountIp(clientIp, account)
+	fmt.Println(userId)
+}
 
-	return
+func List(context *gin.Context) {
+
 }

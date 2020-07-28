@@ -56,7 +56,7 @@ func OauthCallBack(context *gin.Context) {
 			userInfo.Avatar,
 			accountPlatform)
 	}
-	accountPlatformUser, err := shortPlatformService.Create(
+	_, err = shortPlatformService.Create(
 		0, // 默认, 等待后续绑定
 		platformType,
 		userInfo.OpenId,
@@ -68,11 +68,5 @@ func OauthCallBack(context *gin.Context) {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-
-	response.OkWithData(map[string]interface{}{
-		"avatar":      accountPlatformUser.Avatar,
-		"nickname":    accountPlatformUser.NickName,
-		"account_id":  accountPlatformUser.AccountID,
-		"identify_id": accountPlatformUser.IdentifyID,
-	}, context)
+	response.Ok(context)
 }

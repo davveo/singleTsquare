@@ -43,15 +43,15 @@ func (s *Service) Create(userName, password, phone, email, createIpAt string) (*
 
 func (s *Service) FindByName(username string) (*models.Account, error) {
 	// TODO 用户名进行脱敏处理
-	user := new(models.Account)
+	account := new(models.Account)
 	notFound := s.db.Where("username = LOWER(?)", username).
-		Take(&user).RecordNotFound()
+		Take(&account).RecordNotFound()
 
 	if notFound {
 		return nil, ErrUserNotFound
 	}
 
-	return user, nil
+	return account, nil
 }
 
 func (s *Service) FindByPhone(phone string) (*models.Account, error) {
