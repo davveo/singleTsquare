@@ -10,7 +10,8 @@ type ServiceInterface interface {
 	FindByEmail(email string) (*models.Account, error)
 	FindByLoginId(loginId string) (*models.Account, error)
 	FindByName(username string) (*models.Account, error)
-	UpdateAccount(lastLoginIpAt string, account *models.Account) error
+	UpdateAccountIp(lastLoginIpAt string, account *models.Account) error
+	UpdateAccountPassword(password string, account *models.Account) error
 	Create(userName, password, phone, email, createIpAt string) (*models.Account, error)
 	Close()
 }

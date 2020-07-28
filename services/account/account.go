@@ -93,8 +93,12 @@ func (s *Service) ExistByMail(email string) bool {
 	return err == nil
 }
 
-func (s *Service) UpdateAccount(lastLoginIpAt string, user *models.Account) error {
-	return s.updateAccount(s.db, lastLoginIpAt, user)
+func (s *Service) UpdateAccountIp(lastLoginIpAt string, account *models.Account) error {
+	return s.updateAccountLoginIp(s.db, lastLoginIpAt, account)
+}
+
+func (s *Service) UpdateAccountPassword(password string, account *models.Account) error {
+	return s.updateAccountPassword(s.db, password, account)
 }
 
 func (s *Service) FindByLoginId(loginId string) (*models.Account, error) {
@@ -153,14 +157,36 @@ func (s *Service) createAccount(
 	return account, nil
 }
 
-func (s *Service) updateAccount(
+func (s *Service) updateAccountLoginIp(
 	db *gorm.DB,
 	lastLoginIpAt string,
-	user *models.Account) error {
+	account *models.Account) error {
 	accountUser := models.Account{
 		LastLoginAt:   time.Now(),
 		LastLoginIpAt: lastLoginIpAt,
-		LoginTimes:    user.LoginTimes + 1,
+		LoginTimes:    account.LoginTimes + 1,
 	}
-	return db.Model(&user).Updates(&accountUser).Error
+	return db.Model(&account).Updates(&accountUser).Error
+}
+
+func (s *Service) updateAccountPassword(db *gorm.DB,
+	password string,
+	account *models.Account) error {
+	accountUser := models.Account{
+		PassWord:   utils.StringOrNull(""),
+		LoginTimes: account.LoginTimes + 1,
+	}
+
+	if password != "" {
+		if len(password) < MinPasswordLength {
+			return ErrPasswordTooShort
+		}
+		passwordHash, err := pass.HashPassword(password)
+		if err != nil {
+			return err
+		}
+		account.PassWord = utils.StringOrNull(string(passwordHash))
+	}
+
+	return db.Model(&account).Updates(&accountUser).Error
 }

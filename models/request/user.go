@@ -20,7 +20,9 @@ type FastLoginRequest struct {
 }
 
 type BindRequest struct {
-	Phone      string `json:"phone" binding:"required"`
-	Code       string `json:"code" binding:"required"`
+	Phone      string `json:"phone"`
+	Code       string `json:"code"`
+	LoginId    string `json:"login_id"`
+	Password   string `json:"password"`
 	IdentifyId string `json:"identify_id" binding:"required"`
 }

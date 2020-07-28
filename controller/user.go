@@ -1,7 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
+
+	"github.com/davveo/singleTsquare/utils/common"
+
+	"github.com/davveo/singleTsquare/utils/randomstr"
 
 	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/services"
@@ -14,11 +19,14 @@ import (
 )
 
 var (
-	ErrorPassword    = fmt.Sprintf("两次密码不一致")
-	ErrorVerifyCode  = fmt.Sprintf("验证码不正确")
-	UserHasExist     = fmt.Sprintf("用户名已经存在")
-	PhoneHasRegister = fmt.Sprintf("手机号已经注册")
-	EmailHasExist    = fmt.Sprintf("邮箱已存在")
+	ErrorPassword      = fmt.Sprintf("两次密码不一致")
+	ErrorVerifyCode    = fmt.Sprintf("验证码不正确")
+	UserHasExist       = fmt.Sprintf("用户名已经存在")
+	PhoneHasRegister   = fmt.Sprintf("手机号已经注册")
+	EmailHasExist      = fmt.Sprintf("邮箱已存在")
+	FaildCreateAccount = fmt.Sprintf("创建账户失败")
+	FaildUpdateAccount = fmt.Sprintf("更新账户失败")
+	BindFailed         = fmt.Sprintf("绑定失败")
 
 	shortAccountService = services.AccountService
 )
@@ -193,48 +201,90 @@ application/json
 	"identify_id": "xxxx",
 	"phone": "123213123",
 	"code": "1232131",
+	"login_id": "",
+    "password": ""
 }
+
+identify_id 必传
+phone + code
+login_id + password
 */
 func BindAccount(context *gin.Context) {
 	// identify_id, phone, email, username
 	// 将第三方的identify_id与系统phone email username进行绑定
 	// 目前支持绑定手机号
-	var bindRequest request.BindRequest
+	var (
+		bindRequest *request.BindRequest
+		err         error
+	)
 	if err := context.ShouldBindJSON(&bindRequest); err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-	verifycodestr := fmt.Sprintf("verifycode:%s", bindRequest.Phone)
-	bverifycode, _ := Cache.Get(verifycodestr)
-	_ = Cache.Delete(verifycodestr)
-
-	if str.ByteTostr(bverifycode) != bindRequest.Code {
-		response.FailWithMoreMessage("", ErrorVerifyCode, context)
-		return
-	}
+	clientIp := ip.ClientIP(context.Request)
 	accountPlatform, err := shortPlatformService.FindByIdentifyId(bindRequest.IdentifyId)
 	if err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
 	}
-	// 查找手机号
-	// 如果没有找到, 则进行创建, 然后绑定; 否则直接更新就行
-	accountService, err := shortAccountService.FindByPhone(bindRequest.Phone)
-	if err != nil {
-		// 不存在
-		// 这个地方咋创建?
-		accountService, err = shortAccountService.Create()
-		if err != nil {
-			response.FailWithMoreMessage(err.Error(), "绑定失败!", context)
-			return
-		}
-	}
-
-	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
-		response.FailWithMoreMessage(err.Error(), "绑定失败!", context)
+	if bindRequest.Phone != "" && bindRequest.Code != "" { // phone+code
+		err = BindByPhone(clientIp, bindRequest, accountPlatform)
+	} else if bindRequest.LoginId != "" && bindRequest.Password != "" { // loginRequest.LoginId == email/username
+		err = BindByEmailOrUserName(clientIp, bindRequest, accountPlatform)
+	} else {
+		response.FailWithMoreMessage("", "绑定失败!", context)
 		return
 	}
 	response.OkWithMessage("绑定成功!", context)
+}
+
+func BindByPhone(clientIp string,
+	bindRequest *request.BindRequest,
+	accountPlatform *models.AccountPlatform) error {
+	verifycodestr := fmt.Sprintf("verifycode:%s", bindRequest.Phone)
+	bverifycode, _ := Cache.Get(verifycodestr)
+	_ = Cache.Delete(verifycodestr)
+	if str.ByteTostr(bverifycode) != bindRequest.Code {
+		return errors.New(ErrorVerifyCode)
+	}
+	// 查找手机号
+	// 如果没有找到, 则进行创建, 然后绑定; 否则直接更新就行
+	userNameOrPassword := randomstr.GenRandomString(6)
+	accountService, err := shortAccountService.FindByPhone(bindRequest.Phone)
+	if err != nil { // 不存在
+		accountService, err = shortAccountService.Create(
+			userNameOrPassword, userNameOrPassword,
+			bindRequest.Phone, "", clientIp)
+		if err != nil {
+			return errors.New(FaildCreateAccount)
+		}
+	}
+	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
+		return errors.New(FaildUpdateAccount)
+	}
+}
+
+func BindByEmailOrUserName(clientIp string,
+	bindRequest *request.BindRequest,
+	accountPlatform *models.AccountPlatform) error {
+	accountService, err := shortAccountService.FindByLoginId(bindRequest.LoginId)
+	if err != nil { // 如果不存在呢?
+		userNameOrPassword := randomstr.GenRandomString(6)
+		// 需要判断login_id是邮箱还是username
+		if common.IsEmail(bindRequest.LoginId) {
+			accountService, err = shortAccountService.Create(
+				userNameOrPassword, bindRequest.Password, "", bindRequest.LoginId, clientIp)
+		} else {
+			accountService, err = shortAccountService.Create(
+				bindRequest.LoginId, bindRequest.Password, "", "", clientIp)
+		}
+		if err != nil {
+			return errors.New(BindFailed)
+		}
+	}
+	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
+		return errors.New(FaildUpdateAccount)
+	}
 }
 
 func LoginTool(clientIp, identify string) (user *models.User, err error) {
@@ -248,7 +298,7 @@ func LoginTool(clientIp, identify string) (user *models.User, err error) {
 		return nil, err
 	}
 	// 更新账户信息
-	_ = shortAccountService.UpdateAccount(clientIp, account)
+	_ = shortAccountService.UpdateAccountIp(clientIp, account)
 
 	return
 }
