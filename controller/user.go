@@ -2,10 +2,8 @@ package controller
 
 import (
 	"fmt"
-	"github.com/davveo/singleTsquare/models"
-	"github.com/davveo/singleTsquare/utils/oauth2"
-	"net/http"
 
+	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/services"
 
 	"github.com/davveo/singleTsquare/models/request"
@@ -152,17 +150,6 @@ func FastLogin(context *gin.Context) {
 			"avatar":   user.Avatar,
 			"user_id":  user.ID,
 		}, context)
-}
-
-// api/v1/user/oauth_login?service=qq
-// service = qq/weibo/github/facebook/wechat
-func OauthLogin(context *gin.Context) {
-	service := context.DefaultQuery("service", "qq")
-	redirectUrl, err := oauth2.ServiceRedirectURL(service)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-	}
-	context.Redirect(http.StatusMovedPermanently, redirectUrl)
 }
 
 // 扫码登录

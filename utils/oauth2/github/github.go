@@ -2,57 +2,23 @@ package github
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/davveo/singleTsquare/utils/oauth2/base"
 )
 
-const (
-	AppId        = "101827468"
-	UserInfoURL  = "https://api.github.com/user"
-	RedirectURI  = "http://127.0.0.1:8080/oauth2"
-	AuthorizeURL = "https://github.com/login/oauth/authorize"
-	TokenURL     = "https://github.com/login/oauth/access_token"
-)
-
-type Conf struct {
-	ClientId     string // 对应: Client ID
-	ClientSecret string // 对应: Client Secret
-	RedirectUrl  string // 对应: Authorization callback URL
+type Service struct {
 }
 
-var conf = Conf{
-	ClientId:     "7e5fe351bc9b131c6f2a",
-	ClientSecret: "9fd22c13ae790685c59e3fb4a9b444b75b506a5b",
-	RedirectUrl:  "http://localhost:9090/oauth/redirect",
-}
-
-type Token struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"` // 这个字段下面没用到
-	Scope       string `json:"scope"`      // 这个字段下面也没用到
-}
-
-// 认证并获取用户信息
-func Oauth(code string) (userInfo map[string]interface{}, err error) {
-	// 通过 code, 获取 token
-	var token *Token
-	var tokenAuthUrl = GetTokenAuthUrl(code)
-	if token, err = GetToken(tokenAuthUrl); err != nil {
-		return nil, errors.New(fmt.Sprintf("获取Token失败，错误信息为:%s", err))
-	}
-
-	// 通过token，获取用户信息
-	userInfo, err = GetUserInfo(token)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("获取用户信息失败，错误信息为:%s", err))
-	}
-	return userInfo, nil
+func NewService() *Service {
+	return &Service{}
 }
 
 // 通过code获取token认证url
-func GetTokenAuthUrl(code string) string {
+func (s *Service) GetTokenAuthUrl(code string) string {
 	return fmt.Sprintf(
 		"%s?client_id=%s&client_secret=%s&code=%s",
 		TokenURL, conf.ClientId, conf.ClientSecret, code,
@@ -60,13 +26,13 @@ func GetTokenAuthUrl(code string) string {
 }
 
 // 获取 token
-func GetToken(code string) (*Token, error) {
+func (s *Service) GetToken(code string) (*Token, error) {
 	// 形成请求
 	var req *http.Request
 	var err error
 	if req, err = http.NewRequest(
 		http.MethodGet,
-		GetTokenAuthUrl(code), nil); err != nil {
+		s.GetTokenAuthUrl(code), nil); err != nil {
 		return nil, err
 	}
 	req.Header.Set("accept", "application/json")
@@ -86,11 +52,26 @@ func GetToken(code string) (*Token, error) {
 	return &token, nil
 }
 
-// 获取用户信息
-func GetUserInfo(token *Token) (map[string]interface{}, error) {
+func (s *Service) GenRedirectURL() string {
+	// 跳转到第三方地址
+	params := url.Values{}
+	params.Add("client_id", AppId)
+	params.Add("state", "state")
+	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURI)
+	loginURL := fmt.Sprintf("%s?%s", AuthorizeURL, str)
+	return loginURL
+}
 
+func (s *Service) GetUserInfo(code string) (*base.UserInfo, error) {
+	var unmarshalUserInfo *UnmarshalUserInfo
 	var req *http.Request
 	var err error
+	// 获取token
+	token, err := s.GetToken(code)
+	if err != nil {
+		return nil, err
+	}
+
 	if req, err = http.NewRequest(http.MethodGet, UserInfoURL, nil); err != nil {
 		return nil, err
 	}
@@ -104,20 +85,18 @@ func GetUserInfo(token *Token) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// 将响应的数据写入 userInfo 中，并返回
-	var userInfo = make(map[string]interface{})
-	if err = json.NewDecoder(res.Body).Decode(&userInfo); err != nil {
+	defer res.Body.Close()
+	bs, _ := ioutil.ReadAll(res.Body)
+
+	err = json.Unmarshal(bs, &unmarshalUserInfo)
+	if err != nil {
 		return nil, err
 	}
-	return userInfo, nil
-}
 
-func GenRedirectURL() string {
-	// 跳转到第三方地址
-	params := url.Values{}
-	params.Add("client_id", AppId)
-	params.Add("state", "state")
-	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURI)
-	loginURL := fmt.Sprintf("%s?%s", AuthorizeURL, str)
-	return loginURL
+	return &base.UserInfo{
+		AccessToken: token.AccessToken,
+		OpenId:      unmarshalUserInfo.ID,
+		Avatar:      unmarshalUserInfo.Avatar,
+		NickName:    unmarshalUserInfo.NickName,
+	}, nil
 }

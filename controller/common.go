@@ -4,16 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davveo/singleTsquare/models"
-
-	"github.com/davveo/singleTsquare/services"
-
 	"github.com/davveo/singleTsquare/utils/common"
 	"github.com/davveo/singleTsquare/utils/email"
-	"github.com/davveo/singleTsquare/utils/oauth2/github"
-	"github.com/davveo/singleTsquare/utils/oauth2/qq"
-	"github.com/davveo/singleTsquare/utils/oauth2/weibo"
-
 	"github.com/davveo/singleTsquare/utils/sms"
 
 	"github.com/davveo/singleTsquare/utils/str"
@@ -96,102 +88,5 @@ func HealthCheck(context *gin.Context) {
 }
 
 func QrCode(context *gin.Context) {
-
-}
-
-// qq授权回调
-func QQLoginCallBack(context *gin.Context) {
-	codeStr := context.DefaultQuery("code", "")
-	userInfo, err := qq.GetUserInfo(codeStr)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// TODO 需要将用户的信息与第三方信息做一个绑定
-
-	// qq头像存在多个figureurl_qq_2, figureurl_qq_1, figureurl, figureurl_1, figureurl_2
-	accountPlatform, _ := services.AccountPlatformService.FindByIdentifyId(userInfo.OpenId)
-	if accountPlatform != nil { // 如果存在, 则更新
-		_ = services.AccountPlatformService.UpdateByIdentifyId(
-			userInfo.AccessToken,
-			userInfo.NickName,
-			userInfo.Avatar,
-			accountPlatform)
-	}
-	accountPlatformUser, err := services.AccountPlatformService.Create(
-		0, // 默认, 等待后续绑定
-		models.GetPlatformType("qq"),
-		userInfo.OpenId,
-		userInfo.AccessToken,
-		userInfo.NickName,
-		userInfo.Avatar)
-
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// 返回用户信息
-	response.OkWithData(map[string]interface{}{
-		"uid":         accountPlatformUser.Uid,
-		"avatar":      accountPlatformUser.Avatar,
-		"nickname":    accountPlatformUser.NickName,
-		"identify_id": accountPlatformUser.IdentifyId,
-	}, context)
-}
-
-// 微博授权回调
-func WBLoginCallBack(context *gin.Context) {
-	codeStr := context.DefaultQuery("code", "")
-	// 获取token
-	userInfo, err := weibo.GetUserInfo(codeStr)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-
-	accountPlatform, _ := services.AccountPlatformService.FindByIdentifyId(userInfo.OpenId)
-	if accountPlatform != nil { // 如果存在, 则更新
-		_ = services.AccountPlatformService.UpdateByIdentifyId(
-			userInfo.AccessToken,
-			userInfo.NickName,
-			userInfo.Avatar,
-			accountPlatform)
-	}
-	accountPlatformUser, err := services.AccountPlatformService.Create(
-		0, // 默认, 等待后续绑定
-		models.GetPlatformType("weibo"),
-		userInfo.OpenId,
-		userInfo.AccessToken,
-		userInfo.NickName,
-		userInfo.Avatar)
-
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// 返回用户信息
-	response.OkWithData(map[string]interface{}{
-		"uid":         accountPlatformUser.Uid,
-		"avatar":      accountPlatformUser.Avatar,
-		"nickname":    accountPlatformUser.NickName,
-		"identify_id": accountPlatformUser.IdentifyId,
-	}, context)
-}
-
-// github授权回调
-func GBLoginCallBack(context *gin.Context) {
-	codeStr := context.DefaultQuery("code", "")
-	userinfo, err := github.Oauth(codeStr)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
-		return
-	}
-	// TODO 用户信息入库
-	fmt.Println(userinfo)
-	response.Ok(context)
-}
-
-// 微信授权回调
-func WCLoginCallBack(context *gin.Context) {
 
 }

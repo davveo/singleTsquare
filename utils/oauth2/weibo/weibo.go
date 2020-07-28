@@ -6,34 +6,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/davveo/singleTsquare/utils/oauth2/base"
 )
 
-// TODO 配置的处理
-const (
-	AppId        = "101827468"
-	AppKey       = "0d2d856e48e0ebf6b98e0d0c879fe74d"
-	RedirectURL  = "http://127.0.0.1:9090/api/v1/wbLogin" // TODO host动态获取
-	TokenURL     = "https://api.weibo.com/oauth2/access_token"
-	AuthorizeURL = "https://api.weibo.com/oauth2/authorize"
-	UserInfoURL  = "https://api.weibo.com/2/users/show.json"
-	OpenIdURL    = "https://api.weibo.com/oauth2/get_token_info"
-)
-
-type AccessTokenInfo struct {
-	AccessToken string `json:"access_token"`
-	RemindIn    int    `json:"remind_in"`
-	ExpiresIn   int    `json:"expires_in"`
-	Uid         string `json:"uid"`
+type Service struct {
 }
 
-type UserInfo struct {
-	NickName    string `json:"name"`
-	OpenId      string `json:"openid"`
-	Avatar      string `json:"avatar_large"`
-	AccessToken string `json:"access_token"`
+func NewService() *Service {
+	return &Service{}
 }
 
-func TokenParams(code string) string {
+func (s *Service) TokenParams(code string) string {
 	params := url.Values{}
 	params.Add("code", code)
 	params.Add("client_id", AppId)
@@ -43,9 +27,9 @@ func TokenParams(code string) string {
 	return fmt.Sprintf("%s?%s", TokenURL, str)
 }
 
-func GetToken(code string) (*AccessTokenInfo, error) {
+func (s *Service) GetToken(code string) (*AccessTokenInfo, error) {
 	var accessTokenInfo *AccessTokenInfo
-	loginUrl := TokenParams(code)
+	loginUrl := s.TokenParams(code)
 	response, err := http.Get(loginUrl)
 	if err != nil {
 		return nil, err
@@ -58,9 +42,9 @@ func GetToken(code string) (*AccessTokenInfo, error) {
 	return accessTokenInfo, nil
 }
 
-func GetUserInfo(code string) (*UserInfo, error) {
-	var userInfo *UserInfo
-	accessTokenInfo, err := GetToken(code)
+func (s *Service) GetUserInfo(code string) (*base.UserInfo, error) {
+	var unmarshalUserInfo *UnmarshalUserInfo
+	accessTokenInfo, err := s.GetToken(code)
 	if err != nil {
 		return nil, err
 	}
@@ -75,17 +59,19 @@ func GetUserInfo(code string) (*UserInfo, error) {
 	}
 	defer resp.Body.Close()
 	bs, _ := ioutil.ReadAll(resp.Body)
-	err = json.Unmarshal(bs, &userInfo)
+	err = json.Unmarshal(bs, &unmarshalUserInfo)
 	if err != nil {
 		return nil, err
 	}
-
-	userInfo.OpenId = accessTokenInfo.Uid
-	userInfo.AccessToken = accessTokenInfo.AccessToken
-	return userInfo, nil
+	return &base.UserInfo{
+		OpenId:      accessTokenInfo.Uid,
+		Avatar:      unmarshalUserInfo.Avatar,
+		NickName:    unmarshalUserInfo.NickName,
+		AccessToken: accessTokenInfo.AccessToken,
+	}, nil
 }
 
-func GenRedirectURL() string {
+func (s *Service) GenRedirectURL() string {
 	params := url.Values{}
 	params.Add("response_type", "code")
 	params.Add("client_id", AppId)

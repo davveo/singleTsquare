@@ -7,34 +7,18 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/davveo/singleTsquare/utils/oauth2/base"
 )
 
-// TODO 配置的处理
-const (
-	AppId        = "101827468"
-	AppKey       = "0d2d856e48e0ebf6b98e0d0c879fe74d"
-	RedirectURL  = "http://127.0.0.1:9090/api/v1/qqLogin" // TODO host动态获取
-	TokenURL     = "https://graph.qq.com/oauth2.0/token"
-	AuthorizeURL = "https://graph.qq.com/oauth2.0/authorize"
-	OpenidUrl    = "https://graph.qq.com/oauth2.0/me"
-	UserInfoURL  = "https://graph.qq.com/user/get_user_info"
-)
-
-type PrivateInfo struct {
-	AccessToken  string `json:"access_token"`
-	ExpiresIn    string `json:"expires_in"`
-	RefreshToken string `json:"refresh_token"`
-	OpenId       string `json:"openid"`
+type Service struct {
 }
 
-type UserInfo struct {
-	NickName    string `json:"nickname"`
-	OpenId      string `json:"openid"`
-	Avatar      string `json:"figureurl_qq_2"`
-	AccessToken string `json:"access_token"`
+func NewService() *Service {
+	return &Service{}
 }
 
-func RequestAccessToken(code string) (*PrivateInfo, error) {
+func (s *Service) RequestAccessToken(code string) (*PrivateInfo, error) {
 	params := url.Values{}
 	params.Add("grant_type", "authorization_code")
 	params.Add("client_id", AppId)
@@ -52,7 +36,7 @@ func RequestAccessToken(code string) (*PrivateInfo, error) {
 	bs, _ := ioutil.ReadAll(response.Body)
 	body := string(bs)
 
-	resultMap := convertToMap(body)
+	resultMap := s.convertToMap(body)
 
 	info := &PrivateInfo{}
 	info.AccessToken = resultMap["access_token"]
@@ -62,7 +46,7 @@ func RequestAccessToken(code string) (*PrivateInfo, error) {
 	return info, nil
 }
 
-func GetOpenId(accessToken string) (string, error) {
+func (s *Service) GetOpenId(accessToken string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf(
 		"%s?access_token=%s", OpenidUrl, accessToken))
 	if err != nil {
@@ -73,16 +57,16 @@ func GetOpenId(accessToken string) (string, error) {
 	return string(bs)[45:77], nil
 }
 
-func GetUserInfo(code string) (*UserInfo, error) {
-	var userInfo *UserInfo
-	tokenInfo, err := RequestAccessToken(code)
+func (s *Service) GetUserInfo(code string) (*base.UserInfo, error) {
+	var unmarshaluserInfo *UnmarshalUserInfo
+	tokenInfo, err := s.RequestAccessToken(code)
 	if err != nil {
 		return nil, err
 	}
 
 	params := url.Values{}
 	accessToken := tokenInfo.AccessToken
-	openid, _ := GetOpenId(accessToken)
+	openid, _ := s.GetOpenId(accessToken)
 	params.Add("openid", openid)
 	params.Add("oauth_consumer_key", AppId)
 	params.Add("access_token", accessToken)
@@ -95,18 +79,21 @@ func GetUserInfo(code string) (*UserInfo, error) {
 	defer resp.Body.Close()
 	bs, _ := ioutil.ReadAll(resp.Body)
 
-	err = json.Unmarshal(bs, &userInfo)
+	err = json.Unmarshal(bs, &unmarshaluserInfo)
 	if err != nil {
 		return nil, err
 	}
 	// 将用户的标示写入
-	userInfo.OpenId = openid
-	userInfo.AccessToken = accessToken
 
-	return userInfo, nil
+	return &base.UserInfo{
+		OpenId:      openid,
+		AccessToken: accessToken,
+		NickName:    unmarshaluserInfo.NickName,
+		Avatar:      unmarshaluserInfo.Avatar,
+	}, nil
 }
 
-func convertToMap(str string) map[string]string {
+func (s *Service) convertToMap(str string) map[string]string {
 	var resultMap = make(map[string]string)
 	values := strings.Split(str, "&")
 	for _, value := range values {
@@ -116,7 +103,7 @@ func convertToMap(str string) map[string]string {
 	return resultMap
 }
 
-func GenRedirectURL() string {
+func (s *Service) GenRedirectURL() string {
 	params := url.Values{}
 	params.Add("response_type", "code")
 	params.Add("client_id", AppId)
