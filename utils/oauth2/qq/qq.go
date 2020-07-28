@@ -12,10 +12,11 @@ import (
 )
 
 type Service struct {
+	PlatformType uint
 }
 
 func NewService() *Service {
-	return &Service{}
+	return &Service{PlatformType: 1}
 }
 
 func (s *Service) RequestAccessToken(code string) (*PrivateInfo, error) {
@@ -111,4 +112,8 @@ func (s *Service) GenRedirectURL() string {
 	str := fmt.Sprintf("%s&redirect_uri=%s", params.Encode(), RedirectURL)
 	loginURL := fmt.Sprintf("%s?%s", AuthorizeURL, str)
 	return loginURL
+}
+
+func (s *Service) GetPlatformType() uint {
+	return s.PlatformType
 }

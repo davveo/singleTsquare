@@ -19,6 +19,7 @@ type UserInfo struct {
 type ServiceInterface interface {
 	GenRedirectURL() string
 	GetUserInfo(code string) (*UserInfo, error)
+	GetPlatformType() uint
 }
 
 func OauthService(serviceTag string) (ServiceInterface, error) {

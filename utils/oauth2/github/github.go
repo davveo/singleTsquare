@@ -11,10 +11,11 @@ import (
 )
 
 type Service struct {
+	PlatformType uint
 }
 
 func NewService() *Service {
-	return &Service{}
+	return &Service{PlatformType: 4}
 }
 
 // 通过code获取token认证url
@@ -99,4 +100,8 @@ func (s *Service) GetUserInfo(code string) (*base.UserInfo, error) {
 		Avatar:      unmarshalUserInfo.Avatar,
 		NickName:    unmarshalUserInfo.NickName,
 	}, nil
+}
+
+func (s *Service) GetPlatformType() uint {
+	return s.PlatformType
 }

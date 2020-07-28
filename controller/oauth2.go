@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 
-	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/services"
 	"github.com/davveo/singleTsquare/utils/oauth2/base"
 	"github.com/davveo/singleTsquare/utils/response"
@@ -11,7 +10,7 @@ import (
 )
 
 var (
-	shortService = services.AccountPlatformService
+	shortPlatformService = services.AccountPlatformService
 )
 
 // api/v1/user/oauth_login?service=qq
@@ -41,6 +40,7 @@ func OauthCallBack(context *gin.Context) {
 	}
 
 	oauthService, _ := base.OauthService(service)
+	platformType := oauthService.GetPlatformType()
 	userInfo, err := oauthService.GetUserInfo(codeStr)
 	if err != nil {
 		response.FailWithMoreMessage(
@@ -48,17 +48,17 @@ func OauthCallBack(context *gin.Context) {
 		return
 	}
 
-	accountPlatform, _ := shortService.FindByIdentifyId(userInfo.OpenId)
+	accountPlatform, _ := shortPlatformService.FindByIdentifyId(userInfo.OpenId)
 	if accountPlatform != nil {
-		_ = shortService.UpdateByIdentifyId(
+		_ = shortPlatformService.UpdateByIdentifyId(
 			userInfo.AccessToken,
 			userInfo.NickName,
 			userInfo.Avatar,
 			accountPlatform)
 	}
-	accountPlatformUser, err := shortService.Create(
+	accountPlatformUser, err := shortPlatformService.Create(
 		0, // 默认, 等待后续绑定
-		models.GetPlatformType(service),
+		platformType,
 		userInfo.OpenId,
 		userInfo.AccessToken,
 		userInfo.NickName,
@@ -70,9 +70,9 @@ func OauthCallBack(context *gin.Context) {
 	}
 
 	response.OkWithData(map[string]interface{}{
-		"uid":         accountPlatformUser.Uid,
 		"avatar":      accountPlatformUser.Avatar,
 		"nickname":    accountPlatformUser.NickName,
-		"identify_id": accountPlatformUser.IdentifyId,
+		"account_id":  accountPlatformUser.AccountID,
+		"identify_id": accountPlatformUser.IdentifyID,
 	}, context)
 }

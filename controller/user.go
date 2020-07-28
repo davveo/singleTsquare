@@ -19,6 +19,8 @@ var (
 	UserHasExist     = fmt.Sprintf("用户名已经存在")
 	PhoneHasRegister = fmt.Sprintf("手机号已经注册")
 	EmailHasExist    = fmt.Sprintf("邮箱已存在")
+
+	shortAccountService = services.AccountService
 )
 
 /*
@@ -56,21 +58,20 @@ func Register(context *gin.Context) {
 		return
 	}
 
-	if services.AccountService.ExistByUserName(userRequest.UserName) {
+	if shortAccountService.ExistByUserName(userRequest.UserName) {
 		response.FailWithMoreMessage("", UserHasExist, context)
 		return
 	}
-
-	if services.AccountService.ExistByPhone(userRequest.Phone) {
+	if shortAccountService.ExistByPhone(userRequest.Phone) {
 		response.FailWithMoreMessage("", PhoneHasRegister, context)
 		return
 	}
-	if services.AccountService.ExistByMail(userRequest.Email) {
+	if shortAccountService.ExistByMail(userRequest.Email) {
 		response.FailWithMoreMessage("", EmailHasExist, context)
 		return
 	}
 
-	if _, err := services.AccountService.Create(
+	if _, err := shortAccountService.Create(
 		userRequest.UserName,
 		userRequest.Password,
 		userRequest.Phone,
@@ -177,12 +178,67 @@ func ChangePassword(context *gin.Context) {
 
 }
 
+func ResetPassword(context *gin.Context) {
+
+}
+
 func List(context *gin.Context) {
 
 }
 
+/*
+POST
+application/json
+{
+	"identify_id": "xxxx",
+	"phone": "123213123",
+	"code": "1232131",
+}
+*/
+func BindAccount(context *gin.Context) {
+	// identify_id, phone, email, username
+	// 将第三方的identify_id与系统phone email username进行绑定
+	// 目前支持绑定手机号
+	var bindRequest request.BindRequest
+	if err := context.ShouldBindJSON(&bindRequest); err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	verifycodestr := fmt.Sprintf("verifycode:%s", bindRequest.Phone)
+	bverifycode, _ := Cache.Get(verifycodestr)
+	_ = Cache.Delete(verifycodestr)
+
+	if str.ByteTostr(bverifycode) != bindRequest.Code {
+		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		return
+	}
+	accountPlatform, err := shortPlatformService.FindByIdentifyId(bindRequest.IdentifyId)
+	if err != nil {
+		response.FailWithMessage(err.Error(), context)
+		return
+	}
+	// 查找手机号
+	// 如果没有找到, 则进行创建, 然后绑定; 否则直接更新就行
+	accountService, err := shortAccountService.FindByPhone(bindRequest.Phone)
+	if err != nil {
+		// 不存在
+		// 这个地方咋创建?
+		accountService, err = shortAccountService.Create()
+		if err != nil {
+			response.FailWithMoreMessage(err.Error(), "绑定失败!", context)
+			return
+		}
+	}
+
+	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
+		response.FailWithMoreMessage(err.Error(), "绑定失败!", context)
+		return
+	}
+	response.OkWithMessage("绑定成功!", context)
+}
+
 func LoginTool(clientIp, identify string) (user *models.User, err error) {
-	account, err := services.AccountService.FindByLoginId(identify)
+	account, err := shortAccountService.FindByLoginId(identify)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +248,7 @@ func LoginTool(clientIp, identify string) (user *models.User, err error) {
 		return nil, err
 	}
 	// 更新账户信息
-	_ = services.AccountService.UpdateAccount(clientIp, account)
+	_ = shortAccountService.UpdateAccount(clientIp, account)
 
 	return
 }

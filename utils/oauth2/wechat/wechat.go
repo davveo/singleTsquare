@@ -15,10 +15,11 @@ import (
 // https://blog.csdn.net/qq_35781732/article/details/82662021
 
 type Service struct {
+	PlatformType uint
 }
 
 func NewService() *Service {
-	return &Service{}
+	return &Service{PlatformType: 2}
 }
 
 func (s *Service) GenRedirectURL() string {
@@ -93,4 +94,8 @@ func (s *Service) GetUserInfo(code string) (*base.UserInfo, error) {
 		Avatar:      updateUser.HeadimgUrl.(string),
 		NickName:    updateUser.Nickname.(string),
 	}, nil
+}
+
+func (s *Service) GetPlatformType() uint {
+	return s.PlatformType
 }
