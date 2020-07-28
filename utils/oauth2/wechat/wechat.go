@@ -13,11 +13,6 @@ import (
 )
 
 // https://blog.csdn.net/qq_35781732/article/details/82662021
-// https://blog.csdn.net/weixin_43851310/article/details/105816815
-// https://github.com/yun-mu/weixin-login/blob/master/src/controller/weixin.go
-// https://github.com/yizenghui/WechatQrcodeServe
-// TODO 微信授权登录
-// http://127.0.0.1:8080/api/v1/oauth/wechat/callback
 
 type Service struct {
 }

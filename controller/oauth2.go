@@ -10,6 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var (
+	shortService = services.AccountPlatformService
+)
+
 // api/v1/user/oauth_login?service=qq
 // service = qq/weibo/github/facebook/wechat
 func OauthLogin(context *gin.Context) {
@@ -29,25 +33,30 @@ func OauthLogin(context *gin.Context) {
 func OauthCallBack(context *gin.Context) {
 	service := context.Param("service")
 	codeStr := context.DefaultQuery("code", "")
-	oauthService, err := base.OauthService(service)
-	if err != nil {
-		response.FailWithMessage(err.Error(), context)
+
+	if codeStr == "" {
+		response.FailWithMoreMessage(
+			"未获取到授权码, 请重试!", "登录失败!", context)
 		return
 	}
+
+	oauthService, _ := base.OauthService(service)
 	userInfo, err := oauthService.GetUserInfo(codeStr)
 	if err != nil {
-		response.FailWithMessage(err.Error(), context)
+		response.FailWithMoreMessage(
+			err.Error(), "登录失败!", context)
 		return
 	}
-	accountPlatform, _ := services.AccountPlatformService.FindByIdentifyId(userInfo.OpenId)
+
+	accountPlatform, _ := shortService.FindByIdentifyId(userInfo.OpenId)
 	if accountPlatform != nil {
-		_ = services.AccountPlatformService.UpdateByIdentifyId(
+		_ = shortService.UpdateByIdentifyId(
 			userInfo.AccessToken,
 			userInfo.NickName,
 			userInfo.Avatar,
 			accountPlatform)
 	}
-	accountPlatformUser, err := services.AccountPlatformService.Create(
+	accountPlatformUser, err := shortService.Create(
 		0, // 默认, 等待后续绑定
 		models.GetPlatformType(service),
 		userInfo.OpenId,
