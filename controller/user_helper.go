@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+
 	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/models/request"
 	"github.com/davveo/singleTsquare/services"
@@ -11,13 +12,17 @@ import (
 	"github.com/davveo/singleTsquare/utils/str"
 )
 
+func VerifyCode(phone, code string) bool {
+	verifycodestr := fmt.Sprintf("verifycode:%s", phone)
+	bverifycode, _ := Cache.Get(verifycodestr)
+	_ = Cache.Delete(verifycodestr)
+	return str.ByteTostr(bverifycode) == code
+}
+
 func BindAccountByPhone(clientIp string,
 	bindRequest *request.BindRequest,
 	accountPlatform *models.AccountPlatform) error {
-	verifycodestr := fmt.Sprintf("verifycode:%s", bindRequest.Phone)
-	bverifycode, _ := Cache.Get(verifycodestr)
-	_ = Cache.Delete(verifycodestr)
-	if str.ByteTostr(bverifycode) != bindRequest.Code {
+	if !VerifyCode(bindRequest.Phone, bindRequest.Code) {
 		return errors.New(ErrorVerifyCode)
 	}
 	// 查找手机号

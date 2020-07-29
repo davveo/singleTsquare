@@ -26,3 +26,8 @@ type BindRequest struct {
 	Password   string `json:"password"`
 	IdentifyId string `json:"identify_id" binding:"required"`
 }
+
+type VerifyCodeRequest struct {
+	Phone string `json:"phone" binding:"required"`
+	Code  string `json:"code" binding:"required"`
+}

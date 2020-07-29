@@ -34,8 +34,8 @@ var (
 
 func Code(context *gin.Context) {
 	var loginRequestJson request.LoginRequestJson
-	if err := context.ShouldBindJSON(&loginRequestJson); err != nil {
-		response.FailWithMessage(err.Error(), context)
+	if !BindCheck(&loginRequestJson, context) {
+		response.FailWithMessage(ParamValidateFailed, context)
 		return
 	}
 

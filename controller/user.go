@@ -8,19 +8,19 @@ import (
 	"github.com/davveo/singleTsquare/models/request"
 	"github.com/davveo/singleTsquare/utils/ip"
 	"github.com/davveo/singleTsquare/utils/response"
-	"github.com/davveo/singleTsquare/utils/str"
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	ErrorPassword      = fmt.Sprintf("两次密码不一致")
-	ErrorVerifyCode    = fmt.Sprintf("验证码不正确")
-	UserHasExist       = fmt.Sprintf("用户名已经存在")
-	PhoneHasRegister   = fmt.Sprintf("手机号已经注册")
-	EmailHasExist      = fmt.Sprintf("邮箱已存在")
-	FaildCreateAccount = fmt.Sprintf("创建账户失败")
-	FaildUpdateAccount = fmt.Sprintf("更新账户失败")
-	BindFailed         = fmt.Sprintf("绑定失败")
+	ErrorPassword       = fmt.Sprintf("两次密码不一致")
+	ErrorVerifyCode     = fmt.Sprintf("验证码不正确")
+	UserHasExist        = fmt.Sprintf("用户名已经存在")
+	PhoneHasRegister    = fmt.Sprintf("手机号已经注册")
+	EmailHasExist       = fmt.Sprintf("邮箱已存在")
+	FaildCreateAccount  = fmt.Sprintf("创建账户失败")
+	FaildUpdateAccount  = fmt.Sprintf("更新账户失败")
+	BindFailed          = fmt.Sprintf("绑定失败")
+	ParamValidateFailed = fmt.Sprintf("参数校验失败")
 
 	shortAccountService = services.AccountService
 )
@@ -40,17 +40,11 @@ var (
 func Register(context *gin.Context) {
 	var userRequest request.UserRequest
 	clientIp := ip.ClientIP(context.Request)
-
-	if err := context.ShouldBindJSON(&userRequest); err != nil {
-		response.FailWithMessage(err.Error(), context)
+	if !BindCheck(&userRequest, context) {
+		response.FailWithMessage(ParamValidateFailed, context)
 		return
 	}
-	// 比较验证码
-	verifycodestr := fmt.Sprintf("verifycode:%s", userRequest.Phone)
-	bverifycode, _ := Cache.Get(verifycodestr)
-	_ = Cache.Delete(verifycodestr)
-
-	if str.ByteTostr(bverifycode) != userRequest.Code {
+	if !VerifyCode(userRequest.Phone, userRequest.Code) {
 		response.FailWithMoreMessage("", ErrorVerifyCode, context)
 		return
 	}
@@ -98,8 +92,8 @@ func Register(context *gin.Context) {
 func Login(context *gin.Context) {
 	var loginRequest request.LoginRequest
 	clientIp := ip.ClientIP(context.Request)
-	if err := context.ShouldBindJSON(&loginRequest); err != nil {
-		response.FailWithMessage(err.Error(), context)
+	if !BindCheck(&loginRequest, context) {
+		response.FailWithMessage(ParamValidateFailed, context)
 		return
 	}
 	// loginRequest.LoginId == email/username
@@ -128,15 +122,13 @@ func Login(context *gin.Context) {
 func FastLogin(context *gin.Context) {
 	var fastLoginRequest request.FastLoginRequest
 	clientIp := ip.ClientIP(context.Request)
-	if err := context.ShouldBindJSON(&fastLoginRequest); err != nil {
-		response.FailWithMessage(err.Error(), context)
+
+	if !BindCheck(&fastLoginRequest, context) {
+		response.FailWithMessage(ParamValidateFailed, context)
 		return
 	}
-	verifycodestr := fmt.Sprintf("verifycode:%s", fastLoginRequest.Phone)
-	bverifycode, _ := Cache.Get(verifycodestr)
-	_ = Cache.Delete(verifycodestr)
 
-	if str.ByteTostr(bverifycode) != fastLoginRequest.Code {
+	if !VerifyCode(fastLoginRequest.Phone, fastLoginRequest.Code) {
 		response.FailWithMoreMessage("", ErrorVerifyCode, context)
 		return
 	}
@@ -226,6 +218,25 @@ func BindAccountController(context *gin.Context) {
 		"account_platform_id": accountPlatform.ID,
 		"account_id":          accountPlatform.AccountID,
 	}, "绑定成功!", context)
+}
+
+/*
+{
+	"phone": "321312312",
+	"code": "21312",
+}
+*/
+
+func VerifyCodeController(context *gin.Context) {
+	var verifyCodeRequest request.VerifyCodeRequest
+	if !BindCheck(&verifyCodeRequest, context) {
+		response.FailWithMessage(ParamValidateFailed, context)
+		return
+	}
+	if !VerifyCode(verifyCodeRequest.Phone, verifyCodeRequest.Code) {
+		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		return
+	}
 }
 
 func Logout(context *gin.Context) {
