@@ -102,10 +102,11 @@ func (s *Service) UpdateAccountPassword(password string, account *models.Account
 }
 
 func (s *Service) FindByLoginId(loginId string) (*models.Account, error) {
-	// login_id= email或者phone
+	// login_id= email或者phone或者username
 	var account *models.Account
 	notFound := s.db.Where("email = LOWER(?)", loginId).
 		Or("username = LOWER(?)", loginId).
+		Or("phone = ?", loginId).
 		Take(&account).RecordNotFound()
 	if notFound {
 		return nil, ErrUserNotFound

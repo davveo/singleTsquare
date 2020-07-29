@@ -18,9 +18,9 @@ func UserRouter(router *gin.RouterGroup) {
 		userOuterRouter.GET("user_id", controller.Get)                       //获取用户信息
 		userOuterRouter.PUT("user_id", controller.Update)                    //修改用户信息
 		userOuterRouter.POST("bind", controller.BindAccountController)       //第三方登录绑定
-		userOuterRouter.POST("verify_code", controller.VerifyCodeController) //第三方登录绑定
+		userOuterRouter.POST("verify_code", controller.VerifyCodeController) //验证手机号+code
 		userOuterRouter.POST("change_password", controller.ChangePassword)   //修改用户密码
-		userOuterRouter.POST("reset_password", controller.ResetPassword)     //重置密码
+		userOuterRouter.POST("reset_password", controller.ChangePassword)    //忘记密码
 
 	}
 

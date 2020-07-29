@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/davveo/singleTsquare/utils/response"
+
 	"github.com/davveo/singleTsquare/models"
 	"github.com/davveo/singleTsquare/models/request"
 	"github.com/davveo/singleTsquare/services"
@@ -23,7 +25,7 @@ func BindAccountByPhone(clientIp string,
 	bindRequest *request.BindRequest,
 	accountPlatform *models.AccountPlatform) error {
 	if !VerifyCode(bindRequest.Phone, bindRequest.Code) {
-		return errors.New(ErrorVerifyCode)
+		return errors.New(response.ErrorVerifyCode)
 	}
 	// 查找手机号
 	// 如果没有找到, 则进行创建, 然后绑定; 否则直接更新就行
@@ -34,11 +36,11 @@ func BindAccountByPhone(clientIp string,
 			userNameOrPassword, userNameOrPassword,
 			bindRequest.Phone, "", clientIp)
 		if err != nil {
-			return errors.New(FaildCreateAccount)
+			return errors.New(response.FaildCreateAccount)
 		}
 	}
 	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
-		return errors.New(FaildUpdateAccount)
+		return errors.New(response.FaildUpdateAccount)
 	}
 	return nil
 }
@@ -58,11 +60,11 @@ func BindAccountByEmailOrUserName(clientIp string,
 				bindRequest.LoginId, bindRequest.Password, "", "", clientIp)
 		}
 		if err != nil {
-			return errors.New(BindFailed)
+			return errors.New(response.BindFailed)
 		}
 	}
 	if err = shortPlatformService.UpdateAccountId(accountService.ID, accountPlatform); err != nil {
-		return errors.New(FaildUpdateAccount)
+		return errors.New(response.FaildUpdateAccount)
 	}
 	return nil
 }

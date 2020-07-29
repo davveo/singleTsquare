@@ -12,16 +12,6 @@ import (
 )
 
 var (
-	ErrorPassword       = fmt.Sprintf("两次密码不一致")
-	ErrorVerifyCode     = fmt.Sprintf("验证码不正确")
-	UserHasExist        = fmt.Sprintf("用户名已经存在")
-	PhoneHasRegister    = fmt.Sprintf("手机号已经注册")
-	EmailHasExist       = fmt.Sprintf("邮箱已存在")
-	FaildCreateAccount  = fmt.Sprintf("创建账户失败")
-	FaildUpdateAccount  = fmt.Sprintf("更新账户失败")
-	BindFailed          = fmt.Sprintf("绑定失败")
-	ParamValidateFailed = fmt.Sprintf("参数校验失败")
-
 	shortAccountService = services.AccountService
 )
 
@@ -41,29 +31,29 @@ func Register(context *gin.Context) {
 	var userRequest request.UserRequest
 	clientIp := ip.ClientIP(context.Request)
 	if !BindCheck(&userRequest, context) {
-		response.FailWithMessage(ParamValidateFailed, context)
+		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
 	if !VerifyCode(userRequest.Phone, userRequest.Code) {
-		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		response.FailWithMoreMessage("", response.responseErrorVerifyCode, context)
 		return
 	}
 	// 比较两次密码
 	if userRequest.Password != userRequest.RepeatPassword {
-		response.FailWithMoreMessage("", ErrorPassword, context)
+		response.FailWithMoreMessage("", response.ErrorPassword, context)
 		return
 	}
 
 	if shortAccountService.ExistByUserName(userRequest.UserName) {
-		response.FailWithMoreMessage("", UserHasExist, context)
+		response.FailWithMoreMessage("", response.UserHasExist, context)
 		return
 	}
 	if shortAccountService.ExistByPhone(userRequest.Phone) {
-		response.FailWithMoreMessage("", PhoneHasRegister, context)
+		response.FailWithMoreMessage("", response.PhoneHasRegister, context)
 		return
 	}
 	if shortAccountService.ExistByMail(userRequest.Email) {
-		response.FailWithMoreMessage("", EmailHasExist, context)
+		response.FailWithMoreMessage("", response.EmailHasExist, context)
 		return
 	}
 
@@ -93,7 +83,7 @@ func Login(context *gin.Context) {
 	var loginRequest request.LoginRequest
 	clientIp := ip.ClientIP(context.Request)
 	if !BindCheck(&loginRequest, context) {
-		response.FailWithMessage(ParamValidateFailed, context)
+		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
 	// loginRequest.LoginId == email/username
@@ -124,12 +114,12 @@ func FastLogin(context *gin.Context) {
 	clientIp := ip.ClientIP(context.Request)
 
 	if !BindCheck(&fastLoginRequest, context) {
-		response.FailWithMessage(ParamValidateFailed, context)
+		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
 
 	if !VerifyCode(fastLoginRequest.Phone, fastLoginRequest.Code) {
-		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		response.FailWithMoreMessage("", response.ErrorVerifyCode, context)
 		return
 	}
 
@@ -153,20 +143,32 @@ func ScanLogin(context *gin.Context) {
 }
 
 /*
+修改密码: 用户处于登录状态 login_id + password
+
+忘记密码: 用户处于未登录状态, 流程为:
+	先进行邮箱或者手机号验证-->发送code
+	然后在进行密码修改
 {
-	"account_id": "",
-	"password": "",
+	"login_id": "" // email/phone/username
+	"password": ""
 }
 */
 func ChangePassword(context *gin.Context) {
-
-}
-
-/*
-
- */
-func ResetPassword(context *gin.Context) {
-
+	var loginRequest request.LoginRequest
+	if !BindCheck(&loginRequest, context) {
+		response.FailWithMoreMessage(
+			"", response.ParamValidateFailed, context)
+		return
+	}
+	// loginRequest.LoginId == email/username/phone
+	account, _ := shortAccountService.FindByLoginId(loginRequest.LoginId)
+	err := shortAccountService.UpdateAccountPassword(loginRequest.Password, account)
+	if err != nil {
+		response.FailWithMoreMessage(
+			err.Error(), response.FaildUpdateAccountPassword, context)
+		return
+	}
+	response.Ok(context)
 }
 
 /*
@@ -225,18 +227,20 @@ func BindAccountController(context *gin.Context) {
 	"phone": "321312312",
 	"code": "21312",
 }
+验证手机号+code
 */
 
 func VerifyCodeController(context *gin.Context) {
 	var verifyCodeRequest request.VerifyCodeRequest
 	if !BindCheck(&verifyCodeRequest, context) {
-		response.FailWithMessage(ParamValidateFailed, context)
+		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
 	if !VerifyCode(verifyCodeRequest.Phone, verifyCodeRequest.Code) {
-		response.FailWithMoreMessage("", ErrorVerifyCode, context)
+		response.FailWithMoreMessage("", response.ErrorVerifyCode, context)
 		return
 	}
+	response.Ok(context)
 }
 
 func Logout(context *gin.Context) {

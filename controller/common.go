@@ -35,8 +35,17 @@ var (
 func Code(context *gin.Context) {
 	var loginRequestJson request.LoginRequestJson
 	if !BindCheck(&loginRequestJson, context) {
-		response.FailWithMessage(ParamValidateFailed, context)
+		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
+	}
+
+	// 如果是重置密码调用, 则需要进行login_id校验
+	if loginRequestJson.Mode == "reset" {
+		_, err := shortAccountService.FindByLoginId(loginRequestJson.LoginId)
+		if err != nil {
+			response.FailWithMoreMessage("", response.AccountNotExist, context)
+			return
+		}
 	}
 
 	// 生成验证码
@@ -48,8 +57,8 @@ func Code(context *gin.Context) {
 	// TODO 考虑使用策略模式
 	// TODO 考虑异步发送
 	if common.VerifyEmailFormat(loginRequestJson.LoginId) {
-		subject := "登录注册码邮件"
-		bodyMsg := fmt.Sprintf("登录注册码为: %s", verifyCode)
+		subject := "验证码邮件"
+		bodyMsg := fmt.Sprintf("验证码为: %s", verifyCode)
 		if err := email.Send(loginRequestJson.LoginId, subject, bodyMsg); err != nil {
 			response.FailWithMessage(err.Error(), context)
 			return
