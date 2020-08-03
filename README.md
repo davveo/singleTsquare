@@ -1,5 +1,6 @@
 ### singleTsquare
 单体版本
+前端项目, 请关注: https://github.com/csrftoken/tsQuareFrontend
 
 ### 本地开发
 > step one: 执行数据库迁移
