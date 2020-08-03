@@ -14,7 +14,7 @@ import (
 	"github.com/davveo/singleTsquare/utils/str"
 )
 
-func VerifyCode(phone, code string) bool {
+func VerifyCodeUtil(phone, code string) bool {
 	verifycodestr := fmt.Sprintf("verifycode:%s", phone)
 	bverifycode, _ := Cache.Get(verifycodestr)
 	_ = Cache.Delete(verifycodestr)
@@ -24,7 +24,7 @@ func VerifyCode(phone, code string) bool {
 func BindAccountByPhone(clientIp string,
 	bindRequest *request.BindRequest,
 	accountPlatform *models.AccountPlatform) error {
-	if !VerifyCode(bindRequest.Phone, bindRequest.Code) {
+	if !VerifyCodeUtil(bindRequest.Phone, bindRequest.Code) {
 		return errors.New(response.ErrorVerifyCode)
 	}
 	// 查找手机号

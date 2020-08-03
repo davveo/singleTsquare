@@ -34,8 +34,8 @@ func Register(context *gin.Context) {
 		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
-	if !VerifyCode(userRequest.Phone, userRequest.Code) {
-		response.FailWithMoreMessage("", response.responseErrorVerifyCode, context)
+	if !VerifyCodeUtil(userRequest.Phone, userRequest.Code) {
+		response.FailWithMoreMessage("", response.ErrorVerifyCode, context)
 		return
 	}
 	// 比较两次密码
@@ -118,7 +118,7 @@ func FastLogin(context *gin.Context) {
 		return
 	}
 
-	if !VerifyCode(fastLoginRequest.Phone, fastLoginRequest.Code) {
+	if !VerifyCodeUtil(fastLoginRequest.Phone, fastLoginRequest.Code) {
 		response.FailWithMoreMessage("", response.ErrorVerifyCode, context)
 		return
 	}
@@ -186,7 +186,7 @@ identify_id 必传
 phone + code
 login_id + password
 */
-func BindAccountController(context *gin.Context) {
+func BindAccount(context *gin.Context) {
 	// identify_id, phone, email, username
 	// 将第三方的identify_id与系统phone email username进行绑定
 	// 目前支持绑定手机号
@@ -230,13 +230,13 @@ func BindAccountController(context *gin.Context) {
 验证手机号+code
 */
 
-func VerifyCodeController(context *gin.Context) {
+func VerifyCode(context *gin.Context) {
 	var verifyCodeRequest request.VerifyCodeRequest
 	if !BindCheck(&verifyCodeRequest, context) {
 		response.FailWithMessage(response.ParamValidateFailed, context)
 		return
 	}
-	if !VerifyCode(verifyCodeRequest.Phone, verifyCodeRequest.Code) {
+	if !VerifyCodeUtil(verifyCodeRequest.Phone, verifyCodeRequest.Code) {
 		response.FailWithMoreMessage("", response.ErrorVerifyCode, context)
 		return
 	}
@@ -247,18 +247,16 @@ func Logout(context *gin.Context) {
 
 }
 
-func Get(context *gin.Context) {
+/*
+根据user_id获取用户信息
+*/
+func UserGet(context *gin.Context) {
 	userId := context.DefaultQuery("user_id", "")
-	fmt.Println(userId)
 }
 
-func Update(context *gin.Context) {
+func UserUpdate(context *gin.Context) {
 	// 获取query参数
 	userId := context.DefaultQuery("user_id", "")
 
 	fmt.Println(userId)
-}
-
-func List(context *gin.Context) {
-
 }
