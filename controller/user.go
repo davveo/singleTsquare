@@ -252,6 +252,7 @@ func Logout(context *gin.Context) {
 */
 func UserGet(context *gin.Context) {
 	userId := context.DefaultQuery("user_id", "")
+	fmt.Println(userId)
 }
 
 func UserUpdate(context *gin.Context) {

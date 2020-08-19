@@ -1,12 +1,7 @@
-package base
+package oauth2
 
 import (
 	"errors"
-
-	"github.com/davveo/singleTsquare/utils/oauth2/github"
-	"github.com/davveo/singleTsquare/utils/oauth2/qq"
-	"github.com/davveo/singleTsquare/utils/oauth2/wechat"
-	"github.com/davveo/singleTsquare/utils/oauth2/weibo"
 )
 
 type UserInfo struct {
@@ -26,13 +21,13 @@ func OauthService(serviceTag string) (ServiceInterface, error) {
 	var service ServiceInterface
 	switch serviceTag {
 	case "qq":
-		service = qq.NewService()
+		service = NewQQService()
 	case "github":
-		service = github.NewService()
+		service = NewGithubService()
 	case "weibo":
-		service = weibo.NewService()
+		service = NewWeiboService()
 	case "wechat":
-		service = wechat.NewService()
+		service = NewWechatService()
 	default:
 		return nil, errors.New("service does not exist")
 

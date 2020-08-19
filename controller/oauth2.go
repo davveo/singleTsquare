@@ -3,8 +3,9 @@ package controller
 import (
 	"net/http"
 
+	"github.com/davveo/singleTsquare/utils/oauth2"
+
 	"github.com/davveo/singleTsquare/services"
-	"github.com/davveo/singleTsquare/utils/oauth2/base"
 	"github.com/davveo/singleTsquare/utils/response"
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +18,8 @@ var (
 // service = qq/weibo/github/facebook/wechat
 func OauthLogin(context *gin.Context) {
 	service := context.DefaultQuery("service", "qq")
-	oauthService, err := base.OauthService(service)
+	oauthService, err := oauth2.OauthService(service)
+
 	if err != nil {
 		response.FailWithMessage(err.Error(), context)
 		return
@@ -39,7 +41,7 @@ func OauthCallBack(context *gin.Context) {
 		return
 	}
 
-	oauthService, _ := base.OauthService(service)
+	oauthService, _ := oauth2.OauthService(service)
 	platformType := oauthService.GetPlatformType()
 	userInfo, err := oauthService.GetUserInfo(codeStr)
 	if err != nil {
