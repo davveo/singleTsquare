@@ -2,34 +2,38 @@ package controller
 
 import "github.com/gin-gonic/gin"
 
-func CreatePay(context *gin.Context) {
+func PayConfig(ctx *gin.Context) {
 
 }
 
-func Refund(context *gin.Context) {
+func CreatePay(ctx *gin.Context) {
 
 }
 
-func Notify(context *gin.Context) {
+func Refund(ctx *gin.Context) {
 
 }
 
-func Return(context *gin.Context) {
+func Notify(ctx *gin.Context) {
 
 }
 
-func QueryTrade(context *gin.Context) {
+func Return(ctx *gin.Context) {
 
 }
 
-func QueryRefund(context *gin.Context) {
+func QueryTrade(ctx *gin.Context) {
 
 }
 
-func QueryBill(context *gin.Context) {
+func QueryRefund(ctx *gin.Context) {
 
 }
 
-func QuerySettle(context *gin.Context) {
+func QueryBill(ctx *gin.Context) {
+
+}
+
+func QuerySettle(ctx *gin.Context) {
 
 }
