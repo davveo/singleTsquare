@@ -17,6 +17,9 @@ func SetupRouter() *gin.Engine {
 	UserRouter(ApiGroup)
 	CommonRouter(ApiGroup)
 	Oauth2Router(ApiGroup)
+	PayRouter(ApiGroup)
+	OrderRouter(ApiGroup)
+	TopicRouter(ApiGroup)
 
 	return router
 }
